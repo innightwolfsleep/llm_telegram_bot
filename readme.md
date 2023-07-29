@@ -22,9 +22,9 @@ pip install -r llm_telegram_bot\requirements.txt
 ```
 
 HOW TO USE:
-1) add your bot token to llm_telegram_bot/telegram_token.txt (ask https://t.me/BotFather how to get token)
-2) add your model bin file to llm_telegram_bot/models
-3) write path to your bin model file in telegram_config.cfg - model_path
+1) add your bot token to configs/telegram_token.txt (ask https://t.me/BotFather how to get token)
+2) add your model bin file to models/
+3) write path to your bin model file in configs/telegram_config.json - model_path
 2) run "python llm_telegram_bot/main.py"
 
 FEATURES:
@@ -48,9 +48,8 @@ FEATURES:
 
 CONFIGURATION:
 
-telegram_config.cfg
 ```
-telegram_config.cfg
+telegram_config.json
     bot_mode=admin  
         specific bot mode. admin for personal use
             - admin - bot answer for everyone in chat-like mode. All buttons, include settings-for-all are avariable for everyone. (Default)
@@ -82,11 +81,11 @@ telegram_config.cfg
 		tags for bot answers in tg. By default - preformatted text (pre)
 	history_dir_path=history
 		directory for users history
-	token_file_path=telegram_token.txt
+	token_file_path=configs\\telegram_token.txt
 		bot token. Ask https://t.me/BotFather
-	admins_file_path=telegram_admins.txt
+	admins_file_path=configs\\telegram_admins.txt
 		users whos id's in admins_file switched to admin mode and can choose settings-for-all (generating settings and model)
-	users_file_path=telegram_users.txt
+	users_file_path=configs\\telegram_users.txt
 		if just one id in users_file - bot will ignore all users except this id (id's). Even admin will be ignored
 	stopping_strings=<END>,<START>,end{code}
 	eos_token=None

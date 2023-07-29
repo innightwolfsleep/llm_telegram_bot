@@ -61,54 +61,6 @@ class TelegramBotWrapper:
     GENERATOR_MODE_NEXT = "/send_next_message"
     GENERATOR_MODE_CONTINUE = "/continue_last_message"
     # Supplementary structure
-    # Rules for various mode. 0=False=Restricted, 1=True=Allowed
-    user_rules = {
-        # messages buttons
-        BTN_NEXT: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 0,
-                   },
-        BTN_CONTINUE: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 0,
-                       },
-        BTN_DEL_WORD: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 0,
-                       },
-        BTN_REGEN: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 1,
-                    },
-        BTN_CUTOFF: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 0,
-                     },
-        BTN_OPTION: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                     },
-        # option buttons
-        BTN_CHAR_LIST: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 0, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 1,
-                        },
-        BTN_CHAR_LOAD: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 0, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 1,
-                        },
-        BTN_RESET: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 0, MODE_QUERY: 0,
-                    },
-        BTN_DOWNLOAD: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                       },
-        BTN_LORE: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                   },
-        BTN_LANG_LIST: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                        },
-        BTN_LANG_LOAD: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                        },
-        BTN_VOICE_LIST: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                         },
-        BTN_VOICE_LOAD: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                         },
-        BTN_PRESET_LIST: {MODE_ADMIN: 1, MODE_CHAT: 0, MODE_CHAT_R: 0, MODE_NOTEBOOK: 0, MODE_PERSONA: 0, MODE_QUERY: 0,
-                          },
-        BTN_PRESET_LOAD: {MODE_ADMIN: 1, MODE_CHAT: 0, MODE_CHAT_R: 0, MODE_NOTEBOOK: 0, MODE_PERSONA: 0, MODE_QUERY: 0,
-                          },
-        BTN_MODEL_LIST: {MODE_ADMIN: 1, MODE_CHAT: 0, MODE_CHAT_R: 0, MODE_NOTEBOOK: 0, MODE_PERSONA: 0, MODE_QUERY: 0,
-                         },
-        BTN_MODEL_LOAD: {MODE_ADMIN: 1, MODE_CHAT: 0, MODE_CHAT_R: 0, MODE_NOTEBOOK: 0, MODE_PERSONA: 0, MODE_QUERY: 0,
-                         },
-        BTN_DELETE: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                     },
-        # allow to get messages
-        GET_MESSAGE: {MODE_ADMIN: 1, MODE_CHAT: 1, MODE_CHAT_R: 1, MODE_NOTEBOOK: 1, MODE_PERSONA: 1, MODE_QUERY: 1,
-                      },
-    }    # Internal, changeable settings
     replace_prefixes = ["!", "-"]  # Prefix to replace last message
     impersonate_prefixes = ["#", "+"]  # Prefix for "impersonate" message
     # Prefix for persistence "impersonate" message
@@ -143,31 +95,6 @@ class TelegramBotWrapper:
     html_tag = ["<pre>", "</pre>"]
     translate_html_tag = ['<span class="tg-spoiler">', '</span>']
     translation_as_hidden_text = "off"
-    generation_params = {
-        'max_new_tokens': 256,
-        'seed': -1.0,
-        'temperature': 0.7,
-        'top_p': 0.1,
-        'top_k': 40,
-        'typical_p': 1,
-        'repetition_penalty': 1.18,
-        'encoder_repetition_penalty': 1,
-        'no_repeat_ngram_size': 0,
-        'min_length': 0,
-        'do_sample': True,
-        'penalty_alpha': 0,
-        'num_beams': 1,
-        'length_penalty': 1,
-        'early_stopping': False,
-        'add_bos_token': True,
-        'ban_eos_token': False,
-        'truncation_length': 4096,
-        'custom_stopping_strings': '',
-        'chat_prompt_size': 4096,
-        'chat_generation_attempts': 1,
-        'stop_at_newline': False,
-        'skip_special_tokens': True,
-    }
 
     # dict of User data dicts, here stored all users' session info.
     users: Dict[int, User] = {}
@@ -186,10 +113,12 @@ class TelegramBotWrapper:
                  characters_dir_path="characters",
                  presets_dir_path="presets",
                  history_dir_path="history",
-                 token_file_path="telegram_token.txt",
-                 admins_file_path="telegram_admins.txt",
-                 users_file_path="telegram_users.txt",
-                 config_file_path="telegram_config.cfg",
+                 token_file_path="configs/telegram_token.txt",
+                 admins_file_path="configs/telegram_admins.txt",
+                 users_file_path="configs/telegram_users.txt",
+                 config_file_path="configs/telegram_config.json",
+                 generator_params_file_path="configs/telegram_generator_params.json",
+                 user_rules_file_path="configs/telegram_user_rules.json",
                  ):
         """
         Init telegram bot class. Use run_telegram_bot() to initiate bot.
@@ -214,9 +143,12 @@ class TelegramBotWrapper:
         self.token_file_path = token_file_path
         self.admins_file_path = admins_file_path
         self.users_file_path = users_file_path
+        self.config_file_path = config_file_path
+        self.generator_params_file_path = generator_params_file_path
+        self.user_rules_file_path = user_rules_file_path
         # Set bot mode
         self.bot_mode = bot_mode
-        self.generator_script = ""
+        self.generator_script = ""  # mode loaded from config
         self.model_path = ""
         # Set default character json file
         self.default_char = default_char
@@ -227,61 +159,49 @@ class TelegramBotWrapper:
         self.stopping_strings = []
         self.eos_token = None
         # Read config_file if existed, overwrite bot config
-        self.load_config_file(config_file_path)
+        self.load_config_file(self.config_file_path)
+        # Load user generator parameters
+        if os.path.exists(self.generator_params_file_path):
+            with open(self.generator_params_file_path, "r") as params_file:
+                self.generation_params = json.loads(params_file.read())
+        else:
+            print("Cant find generator_params_file")
+            self.generation_params = {}
+        # Load preset
         self.load_preset(self.default_preset)
+        # Load user rules
+        if os.path.exists(self.user_rules_file_path):
+            with open(self.user_rules_file_path, "r") as user_rules_file:
+                self.user_rules = json.loads(user_rules_file.read())
+        else:
+            print("Cant find user_rules_file_path")
+            self.user_rules = {}
+        # Silero initiate
         self.silero = Silero()
+        # generator initiate
         Generator.init(self.generator_script, self.model_path)
 
     def load_config_file(self, config_file_path: str):
         if os.path.exists(config_file_path):
             with open(config_file_path, "r") as config_file_path:
-                for s in config_file_path.read().replace("\r", "").split("\n"):
-                    if "=" in s and s.split("=")[0] == "bot_mode":
-                        self.bot_mode = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "generator_script":
-                        self.generator_script = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "model_path":
-                        self.model_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "default_preset":
-                        self.default_preset = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "default_char":
-                        self.default_char = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "model_lang":
-                        self.model_lang = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "user_lang":
-                        self.user_lang = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "html_tag_open":
-                        self.html_tag[0] = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "html_tag_close":
-                        self.html_tag[-1] = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "characters_dir_path":
-                        self.characters_dir_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "presets_dir_path":
-                        self.presets_dir_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "history_dir_path":
-                        self.history_dir_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "token_file_path":
-                        self.token_file_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "admins_file_path":
-                        self.admins_file_path = s.split("=")[-1]
-                    if "=" in s and s.split("=")[0] == "users_file_path":
-                        self.users_file_path = s.split("=")[-1]
-                    if "=" in s and s.split(
-                            "=")[0] == "translation_as_hidden_text":
-                        self.translation_as_hidden_text = s.split(
-                            "=")[-1].lower()
-                    if "=" in s and s.split("=")[0] == "stopping_strings":
-                        if s.split("=")[-1] == "None":
-                            self.stopping_strings = []
-                        else:
-                            self.stopping_strings += "".join(
-                                s.split("=")[1:]).split(",")
-                    if "=" in s and s.split("=")[0] == "eos_token":
-                        if s.split("=")[-1] == "None":
-                            self.eos_token = None
-                        else:
-                            self.eos_token += "".join(s.split("=")
-                                                      [1:]).split(",")
+                config = json.loads(config_file_path.read())
+                self.bot_mode = config.get("bot_mode", self.bot_mode)
+                self.generator_script = config.get("generator_script", self.generator_script)
+                self.model_path = config.get("model_path", self.model_path)
+                self.default_preset = config.get("default_preset", self.default_preset)
+                self.default_char = config.get("default_char", self.default_char)
+                self.model_lang = config.get("model_lang", self.model_lang)
+                self.user_lang = config.get("user_lang", self.user_lang)
+                self.characters_dir_path = config.get("characters_dir_path", self.characters_dir_path)
+                self.presets_dir_path = config.get("presets_dir_path", self.presets_dir_path)
+                self.history_dir_path = config.get("history_dir_path", self.history_dir_path)
+                self.token_file_path = config.get("token_file_path", self.token_file_path)
+                self.admins_file_path = config.get("admins_file_path", self.admins_file_path)
+                self.users_file_path = config.get("users_file_path", self.users_file_path)
+                self.translation_as_hidden_text = config.get("translation_as_hidden_text",
+                                                             self.translation_as_hidden_text)
+                self.stopping_strings = config.get("stopping_strings", self.stopping_strings)
+                self.eos_token = config.get("eos_token", self.eos_token)
 
     # =============================================================================
     # Run bot with token! Initiate updater obj!
@@ -491,6 +411,9 @@ class TelegramBotWrapper:
             return False
 
     def check_user_rule(self, chat_id, option):
+        if os.path.exists(self.user_rules_file_path):
+            with open(user_rules_file_path, "r") as user_rules_file:
+                self.user_rules = json.loads(user_rules_file.read())
         option = sub(r"[0123456789-]", "", option)
         if option.endswith(self.BTN_OPTION):
             option = self.BTN_OPTION
@@ -1269,7 +1192,7 @@ Language: {user.language}"""
         # Add HTML tags and other...
         if direction not in ["to_model", "no_html"]:
             text = text.replace("#", "&#35;").replace("<", "&#60;").replace(">", "&#62;")
-            original_text = original_text.replace("#", "&#35;").replace("<", "&#60;").replace(">" ,"&#62;")
+            original_text = original_text.replace("#", "&#35;").replace("<", "&#60;").replace(">", "&#62;")
             if self.model_lang != user_language and direction == "to_user" and self.translation_as_hidden_text == "on":
                 text = self.html_tag[0] + original_text + self.html_tag[1] + "\n" + \
                     self.translate_html_tag[0] + text + self.translate_html_tag[1]
