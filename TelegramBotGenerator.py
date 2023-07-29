@@ -2,7 +2,7 @@ import importlib
 
 #  generator obj
 generator = None
-
+debug_flag = True
 
 # import generator
 def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096):
@@ -21,9 +21,15 @@ def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096):
       model_path: path to model file, if generator needs
       n_ctx: context length, generator if needs
     """
-    generator_class = getattr(importlib.import_module("generators." + script), "Generator")
+    try:
+        generator_class = getattr(
+            importlib.import_module("generators." + script), "Generator")
+    except ImportError:
+        generator_class = getattr(
+            importlib.import_module("extensions.telegram_bot.generators." + script), "Generator")
     global generator
     generator = generator_class(model_path, n_ctx)
+
 
 
 def get_answer(
@@ -49,15 +55,17 @@ def get_answer(
     """
     # Preparing, add stopping_strings
     answer = default_answer
-
-    print("stopping_strings =", stopping_strings)
-    print(prompt, end="")
+    generation_params.update({"turn_template": turn_template})
+    if debug_flag:
+        print("stopping_strings =", stopping_strings)
+        print(prompt, end="")
     try:
         answer = generator.get_answer(prompt, generation_params, eos_token, stopping_strings, default_answer,
                                       turn_template)
     except Exception as e:
         print("generation error:", e)
-    print(answer)
+    if debug_flag:
+        print(answer)
     return answer
 
 
