@@ -490,6 +490,22 @@ class TelegramBotWrapper:
         else:
             return False
 
+    def check_user_rule(self, chat_id, option):
+        option = sub(r"[0123456789-]", "", option)
+        if option.endswith(self.BTN_OPTION):
+            option = self.BTN_OPTION
+        # Read admins list
+        if os.path.exists(self.admins_file_path):
+            with open(self.admins_file_path, "r") as admins_file:
+                admins_list = admins_file.read().split()
+        else:
+            admins_list = []
+        # check admin rules
+        if str(chat_id) in admins_list or self.bot_mode == self.MODE_ADMIN:
+            return bool(self.user_rules[option][self.MODE_ADMIN])
+        else:
+            return bool(self.user_rules[option][self.bot_mode])
+
     def send(self, context: CallbackContext, chat_id: int, text: str):
         user = self.users[chat_id]
         text = self.prepare_text(text, self.users[chat_id].language, "to_user")
@@ -1263,22 +1279,6 @@ Language: {user.language}"""
 
     # =============================================================================
     # load characters char_file from ./characters
-
-    def check_user_rule(self, chat_id, option):
-        option = sub(r"[0123456789-]", "", option)
-        if option.endswith(self.BTN_OPTION):
-            option = self.BTN_OPTION
-        # Read admins list
-        if os.path.exists(self.admins_file_path):
-            with open(self.admins_file_path, "r") as admins_file:
-                admins_list = admins_file.read().split()
-        else:
-            admins_list = []
-        # check admin rules
-        if str(chat_id) in admins_list or self.bot_mode == self.MODE_ADMIN:
-            return bool(self.user_rules[option][self.MODE_ADMIN])
-        else:
-            return bool(self.user_rules[option][self.bot_mode])
 
     def get_options_keyboard(self, chat_id=0):
         keyboard_raw = []
