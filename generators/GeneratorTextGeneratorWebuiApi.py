@@ -40,10 +40,8 @@ class Generator:
     def tokens_count(self, text: str):
         return 0
 
-
     def get_model_list(self):
         pass
-
 
     def load_model(self, model_file: str):
         pass
