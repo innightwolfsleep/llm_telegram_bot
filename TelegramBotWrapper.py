@@ -412,7 +412,7 @@ class TelegramBotWrapper:
 
     def check_user_rule(self, chat_id, option):
         if os.path.exists(self.user_rules_file_path):
-            with open(user_rules_file_path, "r") as user_rules_file:
+            with open(self.user_rules_file_path, "r") as user_rules_file:
                 self.user_rules = json.loads(user_rules_file.read())
         option = sub(r"[0123456789-]", "", option)
         if option.endswith(self.BTN_OPTION):
