@@ -38,7 +38,7 @@ class Generator:
             return default_answer
 
     def tokens_count(self, text: str):
-        return 0
+        return len(text)
 
     def get_model_list(self):
         pass
