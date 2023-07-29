@@ -9,6 +9,7 @@ from modules import shared
 
 class Generator:
     model_change_allowed = False  # if model changing allowed without stopping.
+    preset_change_allowed = True  # if preset changing allowed.
 
     def __init__(self, model_path='', n_ctx=2048):
         pass

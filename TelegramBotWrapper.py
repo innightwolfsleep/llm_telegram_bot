@@ -1318,12 +1318,10 @@ Language: {user.language}"""
         if self.check_user_rule(chat_id, self.BTN_VOICE_LIST):
             keyboard_raw.append(InlineKeyboardButton(
                 text=voice + "Voice", callback_data=self.BTN_VOICE_LIST + "0"))
-        if self.check_user_rule(chat_id, self.BTN_PRESET_LIST):
+        if self.check_user_rule(chat_id, self.BTN_PRESET_LIST) and Generator.generator.preset_change_allowed:
             keyboard_raw.append(InlineKeyboardButton(
                 text="🔧Presets", callback_data=self.BTN_PRESET_LIST + "0"))
-        if self.check_user_rule(
-                chat_id,
-                self.BTN_MODEL_LIST) and Generator.generator.model_change_allowed:
+        if self.check_user_rule(chat_id, self.BTN_MODEL_LIST) and Generator.generator.model_change_allowed:
             keyboard_raw.append(InlineKeyboardButton(
                 text="🔨Model", callback_data=self.BTN_MODEL_LIST + "0"))
         if self.check_user_rule(chat_id, self.BTN_DELETE):
