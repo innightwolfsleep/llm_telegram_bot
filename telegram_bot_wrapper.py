@@ -110,69 +110,38 @@ class TelegramBotWrapper:
     # Delay between new messages to avoid flooding (sec)
     flood_avoid_delay = 10.0
 
-    def __init__(self,
-                 bot_mode="admin",
-                 default_char="Example.yaml",
-                 default_preset="LLaMA-Precise.txt",
-                 model_lang="en",
-                 user_lang="en",
-                 characters_dir_path="characters",
-                 presets_dir_path="presets",
-                 history_dir_path="history",
-                 token_file_path="configs/telegram_token.txt",
-                 admins_file_path="configs/telegram_admins.txt",
-                 users_file_path="configs/telegram_users.txt",
-                 config_file_path="configs/telegram_config.json",
-                 generator_params_file_path="configs/telegram_generator_params.json",
-                 user_rules_file_path="configs/telegram_user_rules.json",
-                 sd_api_url="http://127.0.0.1:7860",
-                 sd_config_file_path="configs/telegram_sd_config.json",
-                 ):
+    def __init__(self, config_file_path="configs/telegram_config.json",):
         """Init telegram bot class. Use run_telegram_bot() to initiate bot.
 
         Args
-            bot_mode: bot mode (chat, chat-restricted, notebook, persona). Default is "chat".
-            default_char: name of default character.json file. Default is "chat".
-            default_preset: name of default preset file.
-            model_lang: language of model
-            user_lang: language of conversation
-            characters_dir_path: place where stored characters .json files. Default is "chat".
-            presets_dir_path: path to presets generation presets.
-            history_dir_path: place where stored chat history. Default is "extensions/telegram_bot/history".
-            token_file_path: path to token file. Default is "extensions/telegram_bot/telegram_token.txt".
-            admins_file_path: path to admins file - user separated by "\n"
-            users_file_path: permitted users separated by "\n". If empty - no restriction (whitelist)
             config_file_path: path to config file
-            generator_params_file_path: llm generation config path
-            user_rules_file_path: user rule matrix
-            sd_api_url: url if sd api uses for generating images
-            sd_config_file_path: config for sd api
         """
-        # Set paths to history, default token file, characters dir
-        self.history_dir_path = history_dir_path
-        self.characters_dir_path = characters_dir_path
-        self.presets_dir_path = presets_dir_path
-        self.token_file_path = token_file_path
-        self.admins_file_path = admins_file_path
-        self.users_file_path = users_file_path
-        self.config_file_path = config_file_path
-        self.generator_params_file_path = generator_params_file_path
-        self.user_rules_file_path = user_rules_file_path
-        self.sd_api_url = sd_api_url
-        self.sd_config_file_path = sd_config_file_path
+        # Set internal config vars
+        self.history_dir_path = "history"
+        self.characters_dir_path = "characters"
+        self.presets_dir_path = "presets"
+        self.token_file_path = "telegram_token.txt"
+        self.admins_file_path = "telegram_admins.txt"
+        self.users_file_path = "telegram_users.txt"
+        self.generator_params_file_path = "telegram_generator_params.json"
+        self.user_rules_file_path = "telegram_user_rules.json"
+        self.sd_api_url = "http://127.0.0.1:7860"
+        self.sd_config_file_path = "telegram_sd_config.json"
         # Set bot mode
-        self.bot_mode = bot_mode
+        self.bot_mode = "admin"
         self.generator_script = ""  # mode loaded from config
         self.model_path = ""
         # Set default character json file
-        self.default_char = default_char
-        self.default_preset = default_preset
+        self.default_char = "Example.yaml"
+        self.default_preset = "LLaMA-Creative.txt"
         # Set translator
-        self.model_lang = model_lang
-        self.user_lang = user_lang
+        self.model_lang = "en"
+        self.user_lang = "en"
         self.stopping_strings = []
         self.eos_token = None
-        # Read config_file if existed, overwrite bot config
+        # Set main config file
+        self.config_file_path = config_file_path
+        # Load config_file_path if existed, overwrite current config vars
         self.load_config_file(self.config_file_path)
         # Load user generator parameters
         if os.path.exists(self.generator_params_file_path):
@@ -742,8 +711,9 @@ class TelegramBotWrapper:
             self.init_check_user(chat_id)
             user = self.users[chat_id]
             # Generate answer and replace "typing" message with it
-            user_text = self.prepare_text(
-                user_text, self.users[chat_id].language, "to_model")
+            if user_text not in self.sd_api_prefixes:
+                user_text = self.prepare_text(
+                    user_text, self.users[chat_id].language, "to_model")
             answer, system_message = self.generate_answer(
                 user_in=user_text, chat_id=chat_id)
             if system_message == self.MSG_SYSTEM:
