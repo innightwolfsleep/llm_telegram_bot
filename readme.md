@@ -25,7 +25,9 @@ HOW TO USE:
 1) add your bot token to configs/telegram_token.txt (ask https://t.me/BotFather how to get token)
 2) add your model bin file to models/
 3) write path to your bin model file in configs/telegram_config.json - model_path
-2) run "python llm_telegram_bot/main.py"
+4) run "python llm_telegram_bot/main.py"
+
+(optional) if you are facing internet issue, change `proxy_url` at `telegram_config.json` into your own proxy. For example: `https://127.0.0.1:10808`
 
 FEATURES:
 - chat and notebook modes

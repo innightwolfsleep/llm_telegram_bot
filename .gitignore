@@ -1,6 +1,6 @@
-/telegram_token.txt
-/telegram_users.txt
-/telegram_admins.txt
+/configs/telegram_token.txt
+/configs/telegram_users.txt
+/configs/telegram_admins.txt
 models/*
 !models/place_models_here.txt
 characters/*

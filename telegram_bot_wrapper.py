@@ -76,7 +76,7 @@ class TelegramBotWrapper:
     permanent_contex_add = ["+-"]  # Prefix for adding string to context
     # Prefix for sd api generation
     sd_api_prefixes = ["📷", "📸", "📹", "🎥", "📽", ]
-    sd_api_prompt_of = "Detailed description of OBJECT:"
+    sd_api_prompt_of = "Detailed description of OBJECT appearance:"
     sd_api_prompt_self = "Detailed description of appearance, surroundings and what doing right now: "
     # Language list
     language_dict = {
@@ -110,11 +110,12 @@ class TelegramBotWrapper:
     # Delay between new messages to avoid flooding (sec)
     flood_avoid_delay = 10.0
 
-    def __init__(self, config_file_path="configs/telegram_config.json",):
+    def __init__(self, config_file_path="",):
         """Init telegram bot class. Use run_telegram_bot() to initiate bot.
 
         Args
             config_file_path: path to config file
+
         """
         # Set internal config vars
         self.history_dir_path = "history"
@@ -139,6 +140,7 @@ class TelegramBotWrapper:
         self.user_lang = "en"
         self.stopping_strings = []
         self.eos_token = None
+        self.proxy_url = None
         # Set main config file
         self.config_file_path = config_file_path
         # Load config_file_path if existed, overwrite current config vars
@@ -165,7 +167,8 @@ class TelegramBotWrapper:
         self.SdApi = SdApi(self.sd_api_url, self.sd_config_file_path)
         # generator initiate
         print("Telegram bot generator script: ", self.generator_script)
-        generator_script.init(self.generator_script, self.model_path)
+        generator_script.init(self.generator_script, self.model_path,
+                              n_gpu_layers=self.generation_params.get("n_gpu_layers", 0))
 
     def load_config_file(self, config_file_path: str):
         if os.path.exists(config_file_path):
@@ -193,6 +196,7 @@ class TelegramBotWrapper:
                                                              self.translation_as_hidden_text)
                 self.stopping_strings = config.get("stopping_strings", self.stopping_strings)
                 self.eos_token = config.get("eos_token", self.eos_token)
+                self.proxy_url = config.get("proxy_url", self.proxy_url)
         else:
             print("Cant find config_file " + config_file_path)
 
@@ -209,7 +213,14 @@ class TelegramBotWrapper:
             token_file_name = token_file_name or self.token_file_path
             with open(token_file_name, "r", encoding="utf-8") as f:
                 bot_token = f.read().strip()
-        self.updater = Updater(token=bot_token, use_context=True)
+
+        # if using socks proxy, may require additional package : python-telegram-bot[socks]
+        # run this command to install "pip install "python-telegram-bot[socks]""
+        request_kwargs = {
+            'proxy_url': self.proxy_url,
+        }
+
+        self.updater = Updater(token=bot_token, use_context=True, request_kwargs=request_kwargs)
         self.updater.dispatcher.add_handler(
             CommandHandler("start", self.cb_start_command)),
         self.updater.dispatcher.add_handler(
@@ -428,6 +439,7 @@ class TelegramBotWrapper:
         answer = self.GENERATOR_FAIL
         user = self.users[chat_id]
         return_msg_action = self.MSG_SEND
+        additional_stopping_strings = []
 
         try:
             # acquire generator lock if we can
@@ -473,6 +485,7 @@ class TelegramBotWrapper:
                     user.user_in.append(user_in)
                     user.history.append("")
                     user.history.append(self.sd_api_prompt_of.replace("OBJECT", user_in[1:].strip()))
+                #additional_stopping_strings.append("\n")
                 return_msg_action = self.MSG_SD_API
             elif user_in[0] in self.impersonate_prefixes:
                 # If user_in starts with prefix - impersonate-like (if you try to get "impersonate view")
@@ -499,6 +512,7 @@ class TelegramBotWrapper:
 
             # Set eos_token and stopping_strings.
             stopping_strings = self.stopping_strings.copy()
+            stopping_strings += additional_stopping_strings
             eos_token = self.eos_token
             if self.bot_mode in [
                     self.MODE_CHAT,
@@ -507,10 +521,7 @@ class TelegramBotWrapper:
                 stopping_strings += ["\n" + user.name1 + ":", "\n" + user.name2 + ":", ]
 
             # adjust context/greeting/example
-            if user.context.strip().endswith("\n"):
-                context = f"{user.context.strip()}"
-            else:
-                context = f"{user.context.strip()}\n"
+            context = user.context.strip("\n") + "\n"
             if len(user.example) > 0:
                 example = user.example + "\n<START>\n"
             else:
@@ -605,6 +616,8 @@ class TelegramBotWrapper:
         chat_id = upd.message.chat.id
         file_list = self.SdApi.txt_to_image(answer)
         answer = answer.replace(self.sd_api_prompt_of.replace("OBJECT", user_text[1:].strip()), "")
+        answer = answer.replace(self.sd_api_prompt_self, "")
+        answer = answer[:1024]
         for char in ["[", "]", "{", "}", "(", ")", "*", "\"", "\'"]:
             answer = answer.replace(char, "")
         if len(file_list) > 0:
