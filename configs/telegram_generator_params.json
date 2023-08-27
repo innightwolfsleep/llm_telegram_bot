@@ -10,7 +10,7 @@
     "no_repeat_ngram_size": 0,
     "min_length": 0,
     "do_sample": true,
-    "n_gpu_layers": 20,
+    "n_gpu_layers": 0,
     "penalty_alpha": 200,
     "num_beams": 1,
     "length_penalty": 1,
