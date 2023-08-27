@@ -6,7 +6,7 @@ debug_flag = True
 
 
 # import generator
-def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096):
+def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096, n_gpu_layers=0):
     """Initiate generator type
     generator - is a class Generator from package generators/script
     Generator class should contain method:
@@ -21,6 +21,7 @@ def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096):
       script: script type, one of generators/*.py files
       model_path: path to model file, if generator needs
       n_ctx: context length, if generator needs
+      n_gpu_layers: for ggml mode
     """
     try:
         generator_class = getattr(
@@ -29,7 +30,7 @@ def init(script="GeneratorLlamaCpp", model_path="", n_ctx=4096):
         generator_class = getattr(
             importlib.import_module("extensions.telegram_bot.generators." + script), "Generator")
     global generator
-    generator = generator_class(model_path, n_ctx)
+    generator = generator_class(model_path, n_ctx, n_gpu_layers=n_gpu_layers)
 
 
 def get_answer(
