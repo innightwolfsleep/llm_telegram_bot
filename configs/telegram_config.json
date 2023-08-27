@@ -1,7 +1,7 @@
 {
 	"bot_mode": "admin",
 	"generator_script": "generator_llama_cpp",
-	"model_path": "models\\llama-2-13b-guanaco-qlora.ggmlv3.q3_K_M.bin",
+	"model_path": "models\\llama-2-13b-chat.ggmlv3.q4_0.gguf",
 	"characters_dir_path": "characters",
 	"default_char": "Example.yaml",
 	"presets_dir_path": "presets",
