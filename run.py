@@ -12,7 +12,7 @@ def run_server(token):
     """
     # create TelegramBotWrapper instance
     # by default, read parameters in telegram_config.cfg
-    tg_server = TelegramBotWrapper(config_file_path="configs/telegram_config_standalone.json")
+    tg_server = TelegramBotWrapper(config_file_path="configs/telegram_config.json")
     # by default - read token from telegram_token.txt
     tg_server.run_telegram_bot(bot_token=str(token))
 
