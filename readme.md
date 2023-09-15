@@ -1,11 +1,11 @@
 
 ![Image1](https://github.com/innightwolfsleep/storage/raw/main/textgen_telegram.PNG)
 
+Provide telegram chat with various additional functional like buttons, prefixes, voice/image generation.
+
 WrAPPer for llama.cpp or transformers. 
 &
 An EXTension for [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui).
-
-Provide telegram chat with various additional functional like buttons, prefixes, voice/image generation.
 
 ---------------
 HOW TO INSTALL (**standalone app**):
