@@ -1,3 +1,15 @@
+---------------
+
+**OUTDATER**
+
+USE 
+[innightwolfsleep/text-generation-webui-telegram_bot](https://github.com/innightwolfsleep/text-generation-webui-telegram_bot) 
+INSTEAD
+
+---------------
+
+
+
 
 ![Image1](https://github.com/innightwolfsleep/storage/raw/main/textgen_telegram.PNG)
 
