@@ -4,6 +4,8 @@
 - wrAPPer for llama.cpp(default), exllama or transformers. 
 
 - wrAPPer for [ollama](https://github.com/ollama/ollama) (config example - config/ollama_config.json)
+- 
+- wrAPPer for llama.cpp server (config example - config/llamacpp_server.json)
 
 - an EXTension for [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui).s
 
@@ -118,6 +120,9 @@ x_config.json
         name of generator script (generators folder):
             - generator_exllama - based on llama-cpp-python, recommended
             - generator_llama_cpp - based on llama-cpp-python, recommended
+            - generator_llamacpp_server_chat - using llama.cpp server
+            - generator_ollama_chat - using ollama_chat server
+            - generator_ollama_competition - using ollama_competition server
             - generator_langchain_llama_cpp - based in langchain+llama
             - generator_transformers - based on transformers, untested
             - generator_text_generator_webui_openapi - use oobabooga/text-generation-webui OpenAPI extension
