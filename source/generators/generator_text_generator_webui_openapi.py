@@ -55,7 +55,7 @@ class Generator(AbstractGenerator):
            return default_answer
 
     def tokens_count(self, text: str):
-        return len(text)
+        return 1
 
     def get_model_list(self):
         pass

@@ -1,9 +1,9 @@
 {
 	"bot_mode": "admin",
 	"user_name_template": "",
-	"generator_script": "generator_text_generator_webui_openapi",
-	"model_path": "http://127.0.0.1:8080/v1/completions",
-	"prompt_template": "prompt_templates/llama3.json",
+	"generator_script": "generator_llamacpp_server_chat",
+	"model_path": "",
+	"prompt_template": "prompt_templates/empty.json",
 	"characters_dir_path": "characters",
 	"character_file": "Example.yaml",
 	"presets_dir_path": "presets",
