@@ -1,5 +1,6 @@
 import random
 import requests
+from urllib.parse import urljoin
 
 try:
     from extensions.telegram_bot.source.generators.abstract_generator import AbstractGenerator
@@ -10,6 +11,7 @@ except ImportError:
 class Generator(AbstractGenerator):
     model_change_allowed = False
     preset_change_allowed = True
+    api_is_slow = True
 
     def __init__(
             self,
@@ -18,10 +20,9 @@ class Generator(AbstractGenerator):
             seed=0,
             n_gpu_layers=0,
     ):
-        self.model = model_path
+        self.URI = model_path if len(model_path) > 4 else "http://localhost:8080"  # OpenAI-compatible endpoint
         self.n_ctx = n_ctx
         self.headers = {"Content-Type": "application/json"}
-        self.URI = "http://localhost:8080/v1/chat/completions"  # OpenAI-compatible endpoint
 
     def generate_answer(
             self,
@@ -55,18 +56,20 @@ class Generator(AbstractGenerator):
         messages.append({"role": "user", "content": prompt})
 
         request = {
-            "model": self.model,
             "messages": messages,
             "temperature": generation_params["temperature"],
-            "top_p": generation_params["top_p"],
+            "top_p": generation_params.get("top_p", 1),
             "top_k": generation_params.get("top_k", 40),  # Default if not provided
-            "max_tokens": generation_params["max_new_tokens"],
+            "max_completion_tokens": generation_params["max_new_tokens"],
             "stop": stopping_strings + [eos_token] if eos_token else stopping_strings,
             "seed": random.randint(0, 1000),
         }
 
         try:
-            response = requests.post(self.URI, json=request, headers=self.headers, timeout=60)
+            response = requests.post(urljoin(self.URI, "/v1/chat/completions"),
+                                     json=request,
+                                     headers=self.headers,
+                                     timeout=60)
             response.raise_for_status()
 
             result = response.json()["choices"][0]["message"]["content"]
@@ -76,9 +79,22 @@ class Generator(AbstractGenerator):
             return default_answer
 
     def tokens_count(self, text: str = None):
-        # For llama.cpp with OpenAI API, you might need to implement token counting
-        # Alternatively, use the /v1/tokenize endpoint if available
-        return 0
+        if self.api_is_slow:
+            return 0
+        else:
+            try:
+                response = requests.post(
+                    urljoin(self.URI, "/tokenize"),
+                    json={"content": text},
+                    headers=self.headers,
+                    timeout=10
+                )
+                response.raise_for_status()
+                tokens = response.json().get("tokens", [])
+                return len(tokens)
+            except Exception as e:
+                print(f"Error counting tokens: {str(e)}")
+                return 0
 
     def get_model_list(self):
         try:
