@@ -25,54 +25,38 @@ class Generator(AbstractGenerator):
         self.headers = {"Content-Type": "application/json"}
 
     def generate_answer(
-            self,
-            prompt,
-            generation_params,
-            eos_token,
-            stopping_strings,
-            default_answer,
-            kwargs,
-            turn_template="",
+        self,
+        prompt,
+        generation_params,
+        eos_token,
+        stopping_strings,
+        default_answer,
+        turn_template="",
+        **kwargs,
     ):
-        # Prepare messages in OpenAI format
-        history = kwargs["history"]
-        context = kwargs["context"]
-        example = kwargs["example"]
-        greeting = kwargs["greeting"]
-
-        messages = [
-            {"role": "system", "content": context},
-            {"role": "system", "content": example},
-            {"role": "assistant", "content": greeting},
-        ]
-
-        for m in history:
-            if m["in"]:
-                messages.append({"role": "user", "content": m["in"]})
-            if m["out"]:
-                messages.append({"role": "assistant", "content": m["out"]})
-
-        # Add current prompt
-        messages.append({"role": "user", "content": prompt})
-
+        # Prepare the request payload for Ollama API
         request = {
-            "messages": messages,
+            "prompt": prompt,
+            "raw": True,
+            "stream": False,
             "temperature": generation_params["temperature"],
-            "top_p": generation_params.get("top_p", 1),
-            "top_k": generation_params.get("top_k", 40),  # Default if not provided
-            "max_completion_tokens": generation_params["max_new_tokens"],
-            "stop": stopping_strings + [eos_token] if eos_token else stopping_strings,
-            "seed": random.randint(0, 1000),
+            "top_p": generation_params["top_p"],
+            "top_k": generation_params["top_k"],
+            "repeat_penalty": generation_params["repetition_penalty"],
+            "num_ctx": self.n_ctx,
+            "n_predict": generation_params["max_new_tokens"],
+            "seed": random.randint(0, 1000),  # Random seed for variability
+            "stop": stopping_strings
         }
 
         try:
-            response = requests.post(urljoin(self.URI, "/v1/chat/completions"),
+            response = requests.post(urljoin(self.URI, "/completion"),
                                      json=request,
                                      headers=self.headers,
                                      timeout=60)
             response.raise_for_status()
-
-            result = response.json()["choices"][0]["message"]["content"]
+            print(response.json())
+            result = response.json()["content"]
             return result
         except Exception as e:
             print(f"Error in generation: {str(e)}")

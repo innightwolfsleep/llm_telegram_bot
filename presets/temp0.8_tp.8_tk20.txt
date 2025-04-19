@@ -1,0 +1,4 @@
+top_p=0.8
+top_k=20
+temperature=0.8
+repetition_penalty=1.17W

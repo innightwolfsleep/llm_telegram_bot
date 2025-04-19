@@ -1,5 +1,5 @@
 import logging
-from re import split, sub
+from re import split, sub, DOTALL
 from threading import Lock
 from time import sleep
 from typing import Tuple, Dict
@@ -229,6 +229,9 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             example=user.example,
             turn_template=user.turn_template,
         )
+        if cfg.generation_params["delete_reasoning"]:
+            for reasoning_blocks in cfg.generation_params["delete_reasoning_blocks"]:
+                answer = remove_think_tags(answer, reasoning_blocks)
         if debug_flag:
             print(answer)
         # Truncate prompt prefix/postfix
@@ -282,3 +285,7 @@ def delete_last_text_block(text_in):
         new_last_message = text_in[: -(len(last_word))]
         new_last_message = new_last_message.strip()
         return new_last_message
+
+
+def remove_think_tags(text, tags):
+    return sub(tags[0] + r'.*?' + tags[1], '', text, flags=DOTALL)

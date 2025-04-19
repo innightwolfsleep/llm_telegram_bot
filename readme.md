@@ -121,8 +121,9 @@ x_config.json
             - generator_exllama - based on llama-cpp-python, recommended
             - generator_llama_cpp - based on llama-cpp-python, recommended
             - generator_llamacpp_server_chat - using llama.cpp server
+            - generator_llamacpp_server_completions - using llama.cpp server
             - generator_ollama_chat - using ollama_chat server
-            - generator_ollama_competition - using ollama_competition server
+            - generator_ollama_completions - using ollama_competition server
             - generator_langchain_llama_cpp - based in langchain+llama
             - generator_transformers - based on transformers, untested
             - generator_text_generator_webui_openapi - use oobabooga/text-generation-webui OpenAPI extension
