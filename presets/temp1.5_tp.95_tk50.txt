@@ -1,0 +1,4 @@
+top_p=0.95
+top_k=50
+temperature=1.5
+repetition_penalty=1.17
