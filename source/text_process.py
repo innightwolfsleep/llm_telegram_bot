@@ -15,7 +15,6 @@ try:
     import extensions.telegram_bot.source.generator as generator
     from extensions.telegram_bot.source.user import User as User
     from extensions.telegram_bot.source.conf import cfg
-    from extensions.telegram_bot.source.conf import cfg
 except ImportError:
     import source.const as const
     import source.utils as utils
@@ -26,60 +25,85 @@ except ImportError:
 # Define generator lock to prevent GPU overloading
 generator_lock = Lock()
 
-# Generator obj
+# Generator object
 debug_flag = True
 
 
 # ====================================================================================
 # TEXT LOGIC
 async def aget_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict, name_in="") -> Tuple[str, str]:
+    """
+    Asynchronous wrapper for get_answer function.
+    """
     return await get_answer(text_in, user, bot_mode, generation_params, name_in)
 
 
 @utils.async_wrap
 def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict, name_in=""):
-    # additional delay option
+    """
+    Generates an answer based on the input text, user context, and bot mode.
+
+    Args:
+        text_in: The input text from the user.
+        user: The User object containing user information and history.
+        bot_mode: The current bot mode (e.g., chat, notebook).
+        generation_params: Dictionary of parameters for the generation process.
+        name_in: The name to use in the generated answer (optional).
+
+    Returns:
+        A tuple containing the generated answer (str) and the action to perform (str).
+    """
+    # Additional delay option
     if cfg.answer_delay > 0:
         sleep(cfg.answer_delay)
-    # if generation will fail, return "fail" answer
+
+    # If generation fails, return a "fail" answer
     answer = const.GENERATOR_FAIL
-    # default result action - message
+    # Default result action - send a message
     return_msg_action = const.MSG_SEND
-    # if user is default equal to user1
+
+    # If user is default equal to user1
     name_in = user.name1 if name_in == "" else name_in
-    # for regeneration result checking
-    previous_result = ""
-    # acquire generator lock if we can
+
+    # For regeneration result checking
+    # previous_result = ""
+
+    # Acquire generator lock to prevent GPU overloading
     generator_lock.acquire(timeout=cfg.generation_timeout)
-    # user_input preprocessing
+
+    # User input preprocessing
     try:
-        # Preprocessing: actions which return result immediately:
+        # Preprocessing: actions which return result immediately
         if text_in.startswith(tuple(cfg.permanent_change_name2_prefixes)):
-            # If user_in starts with perm_prefix - just replace name2
+            # If user input starts with a perm_prefix - just replace name2
             user.name2 = text_in[2:]
             return_msg_action = const.MSG_SYSTEM
             generator_lock.release()
             return "New bot name: " + user.name2, return_msg_action
+
         if text_in.startswith(tuple(cfg.permanent_change_name1_prefixes)):
-            # If user_in starts with perm_prefix - just replace name2
+            # If user input starts with a perm_prefix - just replace name1
             user.name1 = text_in[2:]
             return_msg_action = const.MSG_SYSTEM
             generator_lock.release()
             return "New user name: " + user.name1, return_msg_action
+
         if text_in.startswith(tuple(cfg.permanent_add_context_prefixes)):
-            # If user_in starts with perm_prefix - just replace name2
+            # If user input starts with a perm_prefix - just append to context
             user.context += "\n" + text_in[2:]
             return_msg_action = const.MSG_SYSTEM
             generator_lock.release()
             return "Added to context: " + text_in[2:], return_msg_action
+
         if text_in.startswith(tuple(cfg.replace_prefixes)):
-            # If user_in starts with replace_prefix - fully replace last message
+            # If user input starts with a replace_prefix - fully replace last message
             user.change_last_message(history_out=text_in[1:])
             return_msg_action = const.MSG_DEL_LAST
             generator_lock.release()
             return user.history_last_out, return_msg_action
+
         if text_in == const.GENERATOR_MODE_DEL_WORD:
-            # If user_in starts with replace_prefix - fully replace last message
+            # If user input is the delete word command - replace last message
             # get and change last message
             new_last_message = delete_last_text_block(user.history_last_out)
             if not new_last_message.strip():
@@ -89,11 +113,11 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             generator_lock.release()
             return user.history_last_out, return_msg_action
 
-        # Preprocessing: actions which not depends on user input:
+        # Preprocessing: actions which not depends on user input
         if bot_mode in [const.MODE_QUERY]:
             user.history = []
 
-        # if regenerate - msg_id the same, text and name the same. But history clearing:
+        # If regenerate - msg_id the same, text and name the same. But history clearing
         if text_in == const.GENERATOR_MODE_REGENERATE:
             if str(user.msg_id[-1]) not in user.previous_history:
                 user.previous_history.update({str(user.msg_id[-1]): []})
@@ -104,9 +128,9 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             user.truncate_last_message()
             user.msg_id.append(last_msg_id)
 
-        # Preprocessing: add user_in/names/whitespaces to history in right order depends on mode:
+        # Preprocessing: add user_in/names/whitespaces to history in right order depends on mode
         if bot_mode in [const.MODE_NOTEBOOK]:
-            # If notebook mode - append to history only user_in, no additional preparing;
+            # If notebook mode - append to history only user_in, no additional preparing
             user.text_in.append(text_in)
             user.history_append("", text_in)
         elif text_in == const.GENERATOR_MODE_IMPERSONATE:
@@ -126,7 +150,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             # adding "" history line to prevent bug in history sequence, add "name2:" prefix for generation
             pass
         elif text_in.startswith(tuple(cfg.sd_api_prefixes)):
-            # If user_in starts with prefix - impersonate-like (if you try to get "impersonate view")
+            # If user input starts with a prefix - impersonate-like (if you try to get "impersonate view")
             # adding "" line to prevent bug in history sequence, user_in is prefix for bot answer
             user.msg_id.append(0)
             user.text_in.append(text_in)
@@ -137,16 +161,15 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
                 user.history_append("", cfg.sd_api_prompt_of.replace("OBJECT", text_in[1:].strip()))
             return_msg_action = const.MSG_SD_API
         elif text_in.startswith(tuple(cfg.impersonate_prefixes)):
-            # If user_in starts with prefix - impersonate-like (if you try to get "impersonate view")
+            # If user input starts with a prefix - impersonate-like (if you try to get "impersonate view")
             # adding "" line to prevent bug in history sequence, user_in is prefix for bot answer
 
             user.text_in.append(text_in)
             user.name_in.append(text_in[1:])
             user.history_append("", text_in[1:] + ":")
-
         else:
             # If not notebook/impersonate/continue mode then ordinary chat preparing
-            # add "name1&2:" to user and bot message (generation from name2 point of view);
+            # add "name1&2:" to user and bot message (generation from name2 point of view)
             user.text_in.append(text_in)
             user.name_in.append(name_in)
             user.history_append(name_in + ": " + text_in, user.name2 + ":")
@@ -168,7 +191,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
         if cfg.bot_prompt_end != "":
             stopping_strings.append(cfg.bot_prompt_end)
 
-        # adjust context/greeting/example
+        # Adjust context/greeting/example
         if user.context.strip().endswith("\n"):
             context = f"{user.context.strip()}"
         else:
@@ -182,6 +205,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             greeting = "\n" + user.name2 + ": " + user.greeting
         else:
             greeting = ""
+
         # Make prompt: context + example + conversation history
         available_len = generation_params["truncation_length"]
         context_len = generator.get_tokens_count(context)
@@ -196,7 +220,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
                 conversation.append("".join([cfg.user_prompt_begin, i["in"], cfg.user_prompt_end]))
             if len(i["out"]) > 0:
                 conversation.append("".join([cfg.bot_prompt_begin, i["out"], cfg.bot_prompt_end]))
-        if len(cfg.bot_prompt_end):
+        if len(cfg.bot_prompt_end) > 0:
             conversation[-1] = conversation[-1][: -len(cfg.bot_prompt_end)]
 
         prompt = ""
@@ -214,6 +238,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             ": ",
             prompt,
         )
+
         # Generate!
         if debug_flag:
             print(prompt)
@@ -229,11 +254,14 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             example=user.example,
             turn_template=user.turn_template,
         )
+
         if cfg.generation_params["delete_reasoning"]:
             for reasoning_blocks in cfg.generation_params["delete_reasoning_blocks"]:
                 answer = remove_think_tags(answer, reasoning_blocks)
+
         if debug_flag:
             print(answer)
+
         # Truncate prompt prefix/postfix
         if len(cfg.bot_prompt_end) > 0 and answer.endswith(cfg.bot_prompt_end):
             answer = answer[: -len(cfg.bot_prompt_end)]
@@ -241,22 +269,26 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             answer = answer[: -len(cfg.bot_prompt_end[:-1])]
         if len(cfg.bot_prompt_begin) > 0 and answer.startswith(cfg.bot_prompt_begin):
             answer = answer[: -len(cfg.bot_prompt_begin)]
+
         # If generation result zero length - return  "Empty answer."
         if len(answer) < 1:
             answer = const.GENERATOR_EMPTY_ANSWER
+
         # Final return
         if answer not in [const.GENERATOR_EMPTY_ANSWER, const.GENERATOR_FAIL]:
-            # if everything ok - add generated answer in history and return
+            # If everything ok - add generated answer in history and return
             # last
             for end in stopping_strings:
                 if answer.endswith(end):
                     answer = answer[: -len(end)]
             user.change_last_message(history_out=user.history_last_out + " " + answer)
         generator_lock.release()
+
         if len(user.msg_id) > 0:
             if str(user.msg_id[-1]) in user.previous_history:
                 if user.previous_history[str(user.msg_id[-1])][-1] == user.history_last_out:
                     return_msg_action = const.MSG_NOTHING_TO_DO
+
         if return_msg_action == const.MSG_SD_API:
             user.change_last_message(history_out=user.history_last_out.replace(cfg.sd_api_prompt_self, ""))
             user.change_last_message(
@@ -265,13 +297,16 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
         return user.history_last_out, return_msg_action
     except Exception as exception:
         logging.error("get_answer (generator part) " + str(exception) + str(exception.args))
-        # anyway, release generator lock. Then return
+        # Anyway, release generator lock. Then return
         generator_lock.release()
         return_msg_action = const.MSG_SYSTEM
         return user.history_last_out, return_msg_action
 
 
 def delete_last_text_block(text_in):
+    """
+    Deletes the last text block from the input string, splitting by double newlines or single newlines.
+    """
     if '\n\n' in text_in:
         parts = text_in.split('\n\n')
         return '\n\n'.join(parts[:-1]).strip()
@@ -288,4 +323,7 @@ def delete_last_text_block(text_in):
 
 
 def remove_think_tags(text, tags):
+    """
+    Removes text blocks enclosed by specified tags using regular expressions.
+    """
     return sub(tags[0] + r'.*?' + tags[1], '', text, flags=DOTALL)

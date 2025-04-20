@@ -23,6 +23,15 @@ except ImportError:
 
 
 def async_wrap(func):
+    """
+    Wraps a synchronous function to make it asynchronous.
+
+    Args:
+        func: The synchronous function to wrap.
+
+    Returns:
+        An asynchronous function that executes the original function in a separate thread.
+    """
     @wraps(func)
     async def run(*args, loop=None, executor=None, **kwargs):
         if loop is None:
@@ -33,12 +42,33 @@ def async_wrap(func):
     return run
 
 
-@async_wrap
-def translate_text(text: str, source="en", target="en"):
+async def translate_text(text: str, source="en", target="en"):
+    """
+    Translates text from one language to another.
+
+    Args:
+        text: The text to translate.
+        source: The source language (default: "en").
+        target: The target language (default: "en").
+
+    Returns:
+        The translated text.
+    """
     return Translator(source=source, target=target).translate(text)
 
 
 async def prepare_text(original_text: str, user: User, direction="to_user"):
+    """
+    Prepares text for sending to the user or the LLM, including translation and HTML formatting.
+
+    Args:
+        original_text: The original text to prepare.
+        user: The User object containing user preferences.
+        direction: The direction of the translation ("to_model" or "to_user").
+
+    Returns:
+        The prepared text.
+    """
     text = original_text
     # translate
     if cfg.llm_lang != user.language:
@@ -52,16 +82,17 @@ async def prepare_text(original_text: str, user: User, direction="to_user"):
             logging.error("translator_error:\n" + str(exception) + "\n" + str(exception.args))
 
     # Add HTML tags and other...
-    def truncate_trim_wrap_code(text, max_length):
+    def truncate_trim_wrap_code(tr_text, max_length):
+        """Truncates and wraps code blocks in HTML tags."""
         def wrap_code(match):
             return f"{cfg.code_html_tag[0]}{match.group(1)}{cfg.code_html_tag[1]}"
 
-        text = text.replace("#", "&#35;").replace("<", "&#60;").replace(">", "&#62;")
-        text = sub(r"```.*", "```", text)
-        if len(text) > max_length:
-            text = text[:max_length]
-        text = sub(r"```([\s\S]*?)```", wrap_code, text, flags=DOTALL)
-        return text
+        tr_text = tr_text.replace("#", "&#35;").replace("<", "&#60;").replace(">", "&#62;")
+        tr_text = sub(r"```.*", "```", tr_text)
+        if len(tr_text) > max_length:
+            tr_text = tr_text[:max_length]
+        tr_text = sub(r"```([\s\S]*?)```", wrap_code, tr_text, flags=DOTALL)
+        return tr_text
 
     if direction not in ["to_model", "no_html"]:
         if cfg.llm_lang != user.language and direction == "to_user" and cfg.translation_as_hidden_text == "on":
@@ -80,6 +111,12 @@ async def prepare_text(original_text: str, user: User, direction="to_user"):
 
 
 def parse_characters_dir() -> list:
+    """
+    Parses the characters directory and returns a list of character file names.
+
+    Returns:
+        A list of character file names.
+    """
     char_list = []
     for f in listdir(cfg.characters_dir_path):
         if f.endswith((".json", ".yaml", ".yml")):
@@ -88,6 +125,12 @@ def parse_characters_dir() -> list:
 
 
 def parse_presets_dir() -> list:
+    """
+    Parses the presets directory and returns a list of preset file names.
+
+    Returns:
+        A list of preset file names.
+    """
     preset_list = []
     for f in listdir(cfg.presets_dir_path):
         if f.endswith(".txt") or f.endswith(".yaml"):
@@ -97,6 +140,15 @@ def parse_presets_dir() -> list:
 
 # User checking rules
 def check_user_permission(chat_id):
+    """
+    Checks if a user has permission to access the bot.
+
+    Args:
+        chat_id: The user's chat ID.
+
+    Returns:
+        True if the user has permission, False otherwise.
+    """
     # Read admins list
     if exists(cfg.users_file_path):
         with open(normpath(cfg.users_file_path), "r") as users_file:
@@ -111,6 +163,16 @@ def check_user_permission(chat_id):
 
 
 def check_user_rule(chat_id, option):
+    """
+    Checks if a user has permission to perform a specific action.
+
+    Args:
+        chat_id: The user's chat ID.
+        option: The action to check.
+
+    Returns:
+        True if the user has permission, False otherwise.
+    """
     if exists(cfg.user_rules_file_path):
         with open(normpath(cfg.user_rules_file_path), "r") as user_rules_file:
             user_rules = json.loads(user_rules_file.read())
@@ -132,6 +194,13 @@ def check_user_rule(chat_id, option):
 
 
 def init_check_user(users: Dict[int, User], chat_id):
+    """
+    Initializes a new user if they don't already exist.
+
+    Args:
+        users: A dictionary of User objects.
+        chat_id: The user's chat ID.
+    """
     if chat_id not in users:
         # Load default
         users.update({chat_id: User()})
@@ -145,6 +214,15 @@ def init_check_user(users: Dict[int, User], chat_id):
 
 
 def get_conversation_info(user: User):
+    """
+    Returns information about the current conversation, such as the length of the history and the context.
+
+    Args:
+        user: The User object.
+
+    Returns:
+        A string containing information about the conversation.
+    """
     history_tokens = -1
     context_tokens = -1
     greeting_tokens = -1
