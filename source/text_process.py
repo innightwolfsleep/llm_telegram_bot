@@ -117,7 +117,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
         if bot_mode in [const.MODE_QUERY]:
             user.messages = []
 
-        print(text_in, name_in)
+        #print("text_in, name_in", text_in, name_in)
         # Preprocessing: add user_in/names/whitespaces to history in right order depends on mode
         # If regenerate - msg_id the same, text and name the same. But history clearing
         if text_in == const.GENERATOR_MODE_REGENERATE and user.messages:
