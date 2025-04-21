@@ -55,7 +55,6 @@ class Generator(AbstractGenerator):
                                      headers=self.headers,
                                      timeout=60)
             response.raise_for_status()
-            print(response.json())
             result = response.json()["content"]
             return result
         except Exception as e:

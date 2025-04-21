@@ -2,9 +2,53 @@ import json
 import time
 from os.path import exists, normpath
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 
 import yaml
+
+
+class Msg:
+    """
+    Class stored all data related to single message between user and bot
+    """
+    name_in: str  # username
+    text_in: str  # user input
+    msg_in: str  # bot request
+    msg_out: str  # bot answer
+    msg_previous_out: List[str]  # bot answer
+    msg_id: int  # user message IDs for possible deleting
+
+    def __init__(self,
+                 name_in="User",
+                 text_in="",
+                 msg_in="",
+                 msg_out="",
+                 msg_previous_out=None,
+                 msg_id=0,
+                 ):
+        self.name_in = name_in
+        self.text_in = text_in
+        self.msg_in = msg_in
+        self.msg_out = msg_out
+        self.msg_previous_out = msg_previous_out if msg_previous_out is not None else []  # Ensure it's a list even when empty
+        self.msg_id = msg_id
+
+    def to_json(self) -> str:
+        """Serializes the object to JSON string."""
+        return json.dumps({
+            "name_in": self.name_in,
+            "text_in": self.text_in,
+            "msg_in": self.msg_in,
+            "msg_out": self.msg_out,
+            "msg_previous_out": self.msg_previous_out,
+            "msg_id": self.msg_id
+        })
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "Msg":
+        """Deserializes the object from JSON string."""
+        data = json.loads(json_str)
+        return cls(**data)  # Use keyword arguments for initialization
 
 
 class User:
@@ -13,18 +57,18 @@ class User:
     """
 
     def __init__(
-        self,
-        char_file="",  # Path to the character file (e.g., JSON or YAML)
-        user_id=0,  # Unique identifier for the user
-        name1="You",  # User's name (default: "You")
-        name2="Bot",  # Character's name (default: "Bot")
-        context="",  # Context of the conversation (e.g., "Conversation between Bot and You")
-        example="",  # Example dialogue for the character
-        language="en",  # Language of the conversation (default: "en")
-        silero_speaker="None",  # Silero speaker model (for text-to-speech)
-        silero_model_id="None",  # Silero model ID (for text-to-speech)
-        turn_template="",  # Template for formatting conversation turns
-        greeting="Hello.",  # Initial greeting message from the bot (default: "Hello.")
+            self,
+            char_file="",  # Path to the character file (e.g., JSON or YAML)
+            user_id=0,  # Unique identifier for the user
+            name1="You",  # User's name (default: "You")
+            name2="Bot",  # Character's name (default: "Bot")
+            context="",  # Context of the conversation (e.g., "Conversation between Bot and You")
+            example="",  # Example dialogue for the character
+            language="en",  # Language of the conversation (default: "en")
+            silero_speaker="None",  # Silero speaker model (for text-to-speech)
+            silero_model_id="None",  # Silero model ID (for text-to-speech)
+            turn_template="",  # Template for formatting conversation turns
+            greeting="Hello.",  # Initial greeting message from the bot (default: "Hello.")
     ):
         """
         Init User class with default attribute
@@ -45,11 +89,7 @@ class User:
         self.silero_speaker: str = silero_speaker  # Silero speaker model
         self.silero_model_id: str = silero_model_id  # Silero model ID
         self.turn_template: str = turn_template  # Turn template
-        self.text_in: List[str] = []  # "user input history": ["Hi!","Who are you?"], need for regenerate option
-        self.name_in: List[str] = []  # user_name history need to correct regenerate option
-        self.history: List[Dict[str]] = []  # "history": [["in": "query1", "out": "answer1"],["in": "query2",...
-        self.previous_history: Dict[str : List[str]] = {}  # "previous_history": Stores previous messages for back-tracking
-        self.msg_id: List[int] = []  # "msg_id": [143, 144, 145, 146], Message IDs for deleting messages
+        self.messages: List[Msg] = []  # List of all message exchanges
         self.greeting: str = greeting  # "hello" or something
         self.alternate_greetings = []  # List of alternative greetings
         self.last_msg_timestamp: int = 0  # last message timestamp to avoid message flood.
@@ -58,14 +98,24 @@ class User:
         return arg
 
     @property
+    def length(self) -> int:
+        """Returns length of conversation."""
+        return len(self.messages)
+
+    @property
+    def last(self) -> Msg:
+        """Returns length of conversation."""
+        return self.messages[-1]
+
+    @property
     def history_last_out(self) -> str:
         """Returns the last output message in the history."""
-        return self.history[-1]["out"]
+        return self.messages[-1].msg_out if self.messages else ""
 
     @property
     def history_last_in(self) -> str:
         """Returns the last input message in the history."""
-        return self.history[-1]["in"]
+        return self.messages[-1].msg_in if self.messages else ""
 
     def truncate_last_message(self):
         """Truncate user history (minus one answer and user input)
@@ -74,15 +124,21 @@ class User:
             user_in: truncated user input string
             msg_id: truncated answer message id (to be deleted in chat)
         """
-        msg_id = self.msg_id.pop()  # Remove the last message ID
-        user_in = self.text_in.pop()  # Remove the last user input
-        self.name_in.pop()  # Remove the last user name
-        self.history.pop()  # Remove the last message pair from history
-        return user_in, msg_id
+        if not self.messages:
+            return None, None
+
+        last_msg = self.messages.pop()
+        return last_msg.text_in, last_msg.msg_id
 
     def history_append(self, message="", answer=""):
         """Appends a new message and answer to the history."""
-        self.history.append({"in": message, "out": answer})
+        if not self.messages:
+            # First message needs name_in and text_in
+            msg = Msg(name_in=self.name1, text_in=message, msg_in=message, msg_out=answer)
+        else:
+            # Subsequent messages can copy name_in and text_in from previous
+            msg = Msg(name_in=self.messages[-1].name_in, text_in=message, msg_in=message, msg_out=answer)
+        self.messages.append(msg)
 
     def history_last_extend(self, message_add=None, answer_add=None):
         """Extends the last message in the history with additional text.
@@ -91,34 +147,30 @@ class User:
             message_add: Text to append to the last input message.
             answer_add: Text to append to the last output message.
         """
-        if len(self.history) > 0:
+        if self.messages:
             if message_add:
-                self.history[-1]["in"] = self.history[-1]["in"] + "\n" + message_add
+                self.messages[-1].msg_in += "\n" + message_add
             if answer_add:
-                self.history[-1]["out"] = self.history[-1]["out"] + "\n" + answer_add
+                self.messages[-1].msg_out += "\n" + answer_add
 
     def history_as_str(self) -> str:
         """Returns the entire history as a single string."""
-        history = ""
-        if len(self.history) == 0:
-            return history
-        for s in self.history:
-            if len(s["in"]) > 0:
-                history += s["in"]
-            if len(s["out"]) > 0:
-                history += s["out"]
-        return history
+        history_str = ""
+        for msg in self.messages:
+            if msg.msg_in:
+                history_str += msg.msg_in
+            if msg.msg_out:
+                history_str += msg.msg_out
+        return history_str
 
     def history_as_list(self) -> list:
         """Returns the entire history as a list of strings."""
         history_list = []
-        if len(self.history) == 0:
-            return history_list
-        for s in self.history:
-            if len(s["in"]) > 0:
-                history_list.append(s["in"])
-            if len(s["out"]) > 0:
-                history_list.append(s["out"])
+        for msg in self.messages:
+            if msg.msg_in:
+                history_list.append(msg.msg_in)
+            if msg.msg_out:
+                history_list.append(msg.msg_out)
         return history_list
 
     def change_last_message(self, text_in=None, name_in=None, history_in=None, history_out=None, msg_id=None):
@@ -126,21 +178,25 @@ class User:
 
         Args:
             text_in: New user input.
-            name_in: New user name.
+            name_in: New username.
             history_in: New input message for the history.
             history_out: New output message for the history.
             msg_id: New message ID.
         """
-        if text_in:
-            self.text_in[-1] = text_in
-        if name_in:
-            self.name_in[-1] = name_in
-        if history_in:
-            self.history[-1]["in"] = history_in
-        if history_out:
-            self.history[-1]["out"] = history_out
-        if msg_id:
-            self.msg_id[-1] = msg_id
+        if not self.messages:
+            return
+
+        last_msg = self.messages[-1]
+        if text_in is not None:
+            last_msg.text_in = text_in
+        if name_in is not None:
+            last_msg.name_in = name_in
+        if history_in is not None:
+            last_msg.msg_in = history_in
+        if history_out is not None:
+            last_msg.msg_out = history_out
+        if msg_id is not None:
+            last_msg.msg_id = msg_id
 
     def back_to_previous_out(self, msg_id):
         """Reverts the last output message to a previous version based on the message ID.
@@ -151,14 +207,17 @@ class User:
         Returns:
             The previous output message if found, otherwise None.
         """
-        if str(msg_id) in self.previous_history:
-            last_out = self.history_last_out  # Store the current output
-            new_out = self.previous_history[str(msg_id)].pop(-1)  # Get the previous output
-            self.history[-1]["out"] = new_out  # Restore the previous output
-            self.previous_history[str(msg_id)].insert(0, last_out)  # Store the current output for future revert
-            return self.history_last_out
-        else:
+        if not self.messages:
             return None
+
+        for msg in reversed(self.messages):
+            if msg.msg_id == msg_id and msg.msg_previous_out:
+                last_out = msg.msg_out  # Store current output
+                new_out = msg.msg_previous_out.pop()  # Get previous output
+                msg.msg_out = new_out  # Restore previous output
+                msg.msg_previous_out.insert(0, last_out)  # Store current for future revert
+                return new_out
+        return None
 
     def reset(self):
         """Clear bot history and reset to default everything but language, silero and chat_file."""
@@ -167,11 +226,7 @@ class User:
         self.context = ""  # Reset conversation context
         self.example = ""  # Reset dialogue example
         self.turn_template = ""  # Reset turn template
-        self.text_in = []  # Reset user input history
-        self.name_in = []  # Reset user name history
-        self.history = []  # Reset conversation history
-        self.previous_history = {}  # Reset previous history
-        self.msg_id = []  # Reset message IDs
+        self.messages = []  # Reset all messages
         self.greeting = "Hello."  # Reset initial greeting
         self.alternate_greetings = []  # Reset alternative greetings
 
@@ -182,9 +237,7 @@ class User:
             new_greeting = self.alternate_greetings.pop(-1)  # Get the next greeting
             self.greeting = new_greeting  # Update the greeting
             self.alternate_greetings.insert(0, last_greeting)  # Store the previous greeting
-            self.history = []  # Reset history
-            self.previous_history = {}  # Reset previous history
-            self.msg_id = []  # Reset message IDs
+            self.messages = []  # Reset messages
             return True  # Greeting switched successfully
         else:
             return False  # No alternative greetings available
@@ -207,11 +260,7 @@ class User:
                 "silero_speaker": self.silero_speaker,
                 "silero_model_id": self.silero_model_id,
                 "turn_template": self.turn_template,
-                "text_in": self.text_in,
-                "name_in": self.name_in,
-                "history": self.history,
-                "previous_history": self.previous_history,
-                "msg_id": self.msg_id,
+                "messages": [msg.to_json() for msg in self.messages],
                 "greeting": self.greeting,
                 "alternate_greetings": self.alternate_greetings,
             }
@@ -226,25 +275,21 @@ class User:
         Returns:
             True if success, otherwise False
         """
-        data = json.loads(json_data)
         try:
-            self.char_file = data["char_file"] if "char_file" in data else ""
-            self.user_id = data["user_id"] if "user_id" in data else 0
-            self.name1 = data["name1"] if "name1" in data else "You"
-            self.name2 = data["name2"] if "name2" in data else "Bot"
-            self.context = data["context"] if "context" in data else ""
-            self.example = data["example"] if "example" in data else ""
-            self.language = data["language"] if "language" in data else "en"
-            self.silero_speaker = data["silero_speaker"] if "silero_speaker" in data else "None"
-            self.silero_model_id = data["silero_model_id"] if "silero_model_id" in data else "None"
-            self.turn_template = data["turn_template"] if "turn_template" in data else ""
-            self.text_in = data["text_in"] if "text_in" in data else []
-            self.name_in = data["name_in"] if "name_in" in data else []
-            self.history = data["history"] if "history" in data else []
-            self.previous_history = data["previous_history"] if "previous_history" in data else {}
-            self.msg_id = data["msg_id"] if "msg_id" in data else []
-            self.greeting = data["greeting"] if "greeting" in data else "Hello."
-            self.alternate_greetings = data["alternate_greetings"] if "alternate_greetings" in data else []
+            data = json.loads(json_data)
+            self.char_file = data.get("char_file", "")
+            self.user_id = data.get("user_id", 0)
+            self.name1 = data.get("name1", "You")
+            self.name2 = data.get("name2", "Bot")
+            self.context = data.get("context", "")
+            self.example = data.get("example", "")
+            self.language = data.get("language", "en")
+            self.silero_speaker = data.get("silero_speaker", "None")
+            self.silero_model_id = data.get("silero_model_id", "None")
+            self.turn_template = data.get("turn_template", "")
+            self.messages = [Msg.from_json(msg_json) for msg_json in data.get("messages", [])]
+            self.greeting = data.get("greeting", "Hello.")
+            self.alternate_greetings = data.get("alternate_greetings", [])
             return True
         except Exception as exception:
             print("from_json", exception)
@@ -323,10 +368,7 @@ class User:
             self.example = self._replace_context_templates(self.example)
             for i, greeting in enumerate(self.alternate_greetings):
                 self.alternate_greetings[i] = self._replace_context_templates(greeting)
-            self.msg_id = []
-            self.text_in = []
-            self.name_in = []
-            self.history = []
+            self.messages = []
         except Exception as exception:
             print("load_char_json_file", exception)
         finally:
