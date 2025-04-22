@@ -107,16 +107,6 @@ class User:
         """Returns length of conversation."""
         return self.messages[-1]
 
-    @property
-    def history_last_out(self) -> str:
-        """Returns the last output message in the history."""
-        return self.messages[-1].msg_out if self.messages else ""
-
-    @property
-    def history_last_in(self) -> str:
-        """Returns the last input message in the history."""
-        return self.messages[-1].msg_in if self.messages else ""
-
     def truncate_last_message(self):
         """Truncate user history (minus one answer and user input)
 
@@ -132,12 +122,7 @@ class User:
 
     def history_append(self, message="", answer=""):
         """Appends a new message and answer to the history."""
-        if not self.messages:
-            # First message needs name_in and text_in
-            msg = Msg(name_in=self.name1, text_in=message, msg_in=message, msg_out=answer)
-        else:
-            # Subsequent messages can copy name_in and text_in from previous
-            msg = Msg(name_in=self.messages[-1].name_in, text_in=message, msg_in=message, msg_out=answer)
+        msg = Msg(name_in=self.name1, text_in=message, msg_in=message, msg_out=answer)
         self.messages.append(msg)
 
     def history_last_extend(self, message_add=None, answer_add=None):

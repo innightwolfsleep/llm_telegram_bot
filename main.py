@@ -151,7 +151,7 @@ class AiogramLlmBot:
         await self.bot.download_file(file_path=file_path, destination=default_user_file_path)
 
         user.load_user_history(default_user_file_path)
-        last_message = user.history_last_out if user.messages else "<no message in history>"
+        last_message = user.last.msg_out if user.messages else "<no message in history>"
         send_text = await self.make_template_message("hist_loaded", chat_id, last_message)
         await self.bot.send_message(
             chat_id=chat_id,
@@ -790,7 +790,7 @@ class AiogramLlmBot:
         user.load_character_file(characters_dir_path=cfg.characters_dir_path, char_file=char_file)
         user.find_and_load_user_char_history(chat_id, cfg.history_dir_path)
         if user.messages:
-            send_text = await self.make_template_message("hist_loaded", chat_id, user.history_last_out)
+            send_text = await self.make_template_message("hist_loaded", chat_id, user.last.msg_out)
         else:
             send_text = await self.make_template_message("char_loaded", chat_id)
         await self.bot.send_message(
