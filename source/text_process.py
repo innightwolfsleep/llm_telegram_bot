@@ -130,6 +130,8 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             user.last.msg_out = ""
         else:
             user.history_append()
+            user.last.text_in = text_in
+            
         if bot_mode in [const.MODE_NOTEBOOK]:
             # If notebook mode - append to history only user_in, no additional preparing
             user.last.msg_out = text_in
@@ -157,7 +159,6 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             # If not notebook/impersonate/continue mode then ordinary chat preparing
             # add "name1&2:" to user and bot message (generation from name2 point of view)
             user.last.msg_out = user.name2 + ":"
-            user.last.text_in = name_in + ": " + text_in
             user.last.msg_in = name_in + ": " + text_in
     except Exception as exception:
         generator_lock.release()
