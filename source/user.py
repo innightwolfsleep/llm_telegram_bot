@@ -13,27 +13,23 @@ class Msg:
     """
     name_in: str  # specific username, if configured. Default - same as user.name1
     text_in: str  # user input, raw format
-    msg_in: str  # user input after processing (as it sent to model)
-    msg_out: str  # model answer
+    inbound: str  # user input as it stored in history
+    outbound: str  # bot answer as it stored in history
     msg_previous_out: List[str]  # previous model answers list, result of regenerate option
     msg_id: int  # bot answering message IDs, using for possible deleting/editing/regenerating
-    # todo
-    # RENAME msg_in/msg_ou 
-    # think about replacing on "prompt" and "result" logica
 
-    
     def __init__(self,
                  name_in="User",
                  text_in="",
-                 msg_in="",
-                 msg_out="",
+                 inbound="",
+                 outbound="",
                  msg_previous_out=None,
                  msg_id=0,
                  ):
         self.name_in = name_in
         self.text_in = text_in
-        self.msg_in = msg_in
-        self.msg_out = msg_out
+        self.inbound = inbound
+        self.outbound = outbound
         self.msg_previous_out = msg_previous_out if msg_previous_out is not None else []  # Ensure it's a list even when empty
         self.msg_id = msg_id
 
@@ -42,8 +38,8 @@ class Msg:
         return json.dumps({
             "name_in": self.name_in,
             "text_in": self.text_in,
-            "msg_in": self.msg_in,
-            "msg_out": self.msg_out,
+            "msg_in": self.inbound,
+            "msg_out": self.outbound,
             "msg_previous_out": self.msg_previous_out,
             "msg_id": self.msg_id
         })
@@ -126,7 +122,7 @@ class User:
 
     def history_append(self, message="", answer=""):
         """Appends a new message and answer to the history."""
-        msg = Msg(name_in=self.name1, text_in=message, msg_in=message, msg_out=answer)
+        msg = Msg(name_in=self.name1, text_in=message, inbound=message, outbound=answer)
         self.messages.append(msg)
 
     def history_last_extend(self, message_add=None, answer_add=None):
@@ -138,28 +134,28 @@ class User:
         """
         if self.messages:
             if message_add:
-                self.messages[-1].msg_in += "\n" + message_add
+                self.messages[-1].inbound += "\n" + message_add
             if answer_add:
-                self.messages[-1].msg_out += "\n" + answer_add
+                self.messages[-1].outbound += "\n" + answer_add
 
     def history_as_str(self) -> str:
         """Returns the entire history as a single string."""
         history_str = ""
         for msg in self.messages:
-            if msg.msg_in:
-                history_str += msg.msg_in
-            if msg.msg_out:
-                history_str += msg.msg_out
+            if msg.inbound:
+                history_str += msg.inbound
+            if msg.outbound:
+                history_str += msg.outbound
         return history_str
 
     def history_as_list(self) -> list:
         """Returns the entire history as a list of strings."""
         history_list = []
         for msg in self.messages:
-            if msg.msg_in:
-                history_list.append(msg.msg_in)
-            if msg.msg_out:
-                history_list.append(msg.msg_out)
+            if msg.inbound:
+                history_list.append(msg.inbound)
+            if msg.outbound:
+                history_list.append(msg.outbound)
         return history_list
 
     def change_last_message(self, text_in=None, name_in=None, history_in=None, history_out=None, msg_id=None):
@@ -181,9 +177,9 @@ class User:
         if name_in is not None:
             last_msg.name_in = name_in
         if history_in is not None:
-            last_msg.msg_in = history_in
+            last_msg.inbound = history_in
         if history_out is not None:
-            last_msg.msg_out = history_out
+            last_msg.outbound = history_out
         if msg_id is not None:
             last_msg.msg_id = msg_id
 
@@ -201,9 +197,9 @@ class User:
 
         for msg in reversed(self.messages):
             if msg.msg_id == msg_id and msg.msg_previous_out:
-                last_out = msg.msg_out  # Store current output
+                last_out = msg.outbound  # Store current output
                 new_out = msg.msg_previous_out.pop()  # Get previous output
-                msg.msg_out = new_out  # Restore previous output
+                msg.outbound = new_out  # Restore previous output
                 msg.msg_previous_out.insert(0, last_out)  # Store current for future revert
                 return new_out
         return None

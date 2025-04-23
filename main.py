@@ -151,7 +151,7 @@ class AiogramLlmBot:
         await self.bot.download_file(file_path=file_path, destination=default_user_file_path)
 
         user.load_user_history(default_user_file_path)
-        last_message = user.last.msg_out if user.messages else "<no message in history>"
+        last_message = user.last.outbound if user.messages else "<no message in history>"
         send_text = await self.make_template_message("hist_loaded", chat_id, last_message)
         await self.bot.send_message(
             chat_id=chat_id,
@@ -201,9 +201,12 @@ class AiogramLlmBot:
         (urllib3.exceptions.HTTPError, urllib3.exceptions.ConnectTimeoutError),
         max_time=10,
     )
-    async def clean_last_message_markup(self, chat_id: int):
+    async def clean_last_message_markup(self, chat_id: int, previous_factor=0):
         if chat_id in self.users and self.users[chat_id].messages:
-            last_msg = self.users[chat_id].last.msg_id
+            if len(self.users[chat_id].messages) > previous_factor:
+                last_msg = self.users[chat_id].messages[-1 - previous_factor].msg_id
+            else:
+                return
             try:
                 await self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=last_msg, reply_markup=None)
             except Exception as exception:
@@ -349,13 +352,13 @@ class AiogramLlmBot:
                 user_text = user_text.replace("".join(["@", me["username"]]), "")
             else:
                 if user.messages:
-                    user.last.msg_out += user_text
+                    user.last.outbound += user_text
                 return
 
         if 1 > cfg.chance_to_get_answer > 0:
             if cfg.chance_to_get_answer > random.uniform(0, 1):
                 if user.messages:
-                    user.last.msg_out += f"{self.get_user_profile_name(message)}: {user_text}"
+                    user.last.outbound += f"{self.get_user_profile_name(message)}: {user_text}"
                 return
 
         typing = await self.start_send_typing_status(chat_id)
@@ -380,7 +383,7 @@ class AiogramLlmBot:
                 if system_message == const.MSG_DEL_LAST:
                     await message.delete()
                 reply = await self.send_message(text=answer, chat_id=chat_id)
-                await self.clean_last_message_markup(chat_id)
+                await self.clean_last_message_markup(chat_id, 1)
                 if user.messages:
                     user.last.msg_id = reply.message_id
                 user.save_user_history(chat_id, cfg.history_dir_path)
@@ -790,7 +793,7 @@ class AiogramLlmBot:
         user.load_character_file(characters_dir_path=cfg.characters_dir_path, char_file=char_file)
         user.find_and_load_user_char_history(chat_id, cfg.history_dir_path)
         if user.messages:
-            send_text = await self.make_template_message("hist_loaded", chat_id, user.last.msg_out)
+            send_text = await self.make_template_message("hist_loaded", chat_id, user.last.outbound)
         else:
             send_text = await self.make_template_message("char_loaded", chat_id)
         await self.bot.send_message(
