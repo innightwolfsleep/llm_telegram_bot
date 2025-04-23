@@ -11,13 +11,17 @@ class Msg:
     """
     Class stored all data related to single message between user and bot
     """
-    name_in: str  # username
-    text_in: str  # user input
-    msg_in: str  # bot request
-    msg_out: str  # bot answer
-    msg_previous_out: List[str]  # bot answer
-    msg_id: int  # user message IDs for possible deleting
+    name_in: str  # specific username, if configured. Default - same as user.name1
+    text_in: str  # user input, raw format
+    msg_in: str  # user input after processing (as it sent to model)
+    msg_out: str  # model answer
+    msg_previous_out: List[str]  # previous model answers list, result of regenerate option
+    msg_id: int  # bot answering message IDs, using for possible deleting/editing/regenerating
+    # todo
+    # RENAME msg_in/msg_ou 
+    # think about replacing on "prompt" and "result" logica
 
+    
     def __init__(self,
                  name_in="User",
                  text_in="",
