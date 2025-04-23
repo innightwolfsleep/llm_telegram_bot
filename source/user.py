@@ -2,7 +2,7 @@ import json
 import time
 from os.path import exists, normpath
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import yaml
 
@@ -38,17 +38,40 @@ class Msg:
         return json.dumps({
             "name_in": self.name_in,
             "text_in": self.text_in,
-            "msg_in": self.inbound,
-            "msg_out": self.outbound,
+            "inbound": self.inbound,
+            "outbound": self.outbound,
             "msg_previous_out": self.msg_previous_out,
             "msg_id": self.msg_id
         })
+
+    def to_dict(self) -> Dict:
+        """Serializes the object to obj."""
+        return {
+            "name_in": self.name_in,
+            "text_in": self.text_in,
+            "inbound": self.inbound,
+            "outbound": self.outbound,
+            "msg_previous_out": self.msg_previous_out,
+            "msg_id": self.msg_id
+        }
 
     @classmethod
     def from_json(cls, json_str: str) -> "Msg":
         """Deserializes the object from JSON string."""
         data = json.loads(json_str)
         return cls(**data)  # Use keyword arguments for initialization
+
+    @classmethod
+    def from_dict(cls, dct: Dict) -> "Msg":
+        """Deserializes the object from dict."""
+        return cls(
+            name_in=dct.get("name_in", ""),
+            text_in=dct.get("text_in", ""),
+            inbound=dct.get("inbound", ""),
+            outbound=dct.get("outbound", ""),
+            msg_previous_out=dct.get("msg_previous_out", ""),
+            msg_id=dct.get("msg_id", 0),
+        )  # Use keyword arguments for initialization
 
 
 class User:
@@ -245,7 +268,7 @@ class User:
                 "silero_speaker": self.silero_speaker,
                 "silero_model_id": self.silero_model_id,
                 "turn_template": self.turn_template,
-                "messages": [msg.to_json() for msg in self.messages],
+                "messages": [msg.to_dict() for msg in self.messages],
                 "greeting": self.greeting,
                 "alternate_greetings": self.alternate_greetings,
             }
@@ -272,7 +295,7 @@ class User:
             self.silero_speaker = data.get("silero_speaker", "None")
             self.silero_model_id = data.get("silero_model_id", "None")
             self.turn_template = data.get("turn_template", "")
-            self.messages = [Msg.from_json(msg_json) for msg_json in data.get("messages", [])]
+            self.messages = [Msg.from_dict(msg_dct) for msg_dct in data.get("messages", [])]
             self.greeting = data.get("greeting", "Hello.")
             self.alternate_greetings = data.get("alternate_greetings", [])
             return True

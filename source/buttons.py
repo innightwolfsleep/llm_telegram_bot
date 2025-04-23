@@ -96,6 +96,12 @@ def get_chat_init_keyboard(chat_id=0, alter_greeting_exist=False):
     return [keyboard_raw]
 
 
+def get_sd_api_keyboard():
+    keyboard_raw = [{"text": "🔄Regenerate", "callback_data": const.BTN_REGEN},
+                    {"text": "❌Delete", "callback_data": const.BTN_CUTOFF}]
+    return [keyboard_raw]
+
+
 def get_switch_keyboard(
         opt_list: list,
         shift: int,
