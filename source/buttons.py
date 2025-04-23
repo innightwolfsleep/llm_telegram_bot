@@ -34,9 +34,6 @@ def get_options_keyboard(chat_id, user: User):
 
     if utils.check_user_rule(chat_id, const.BTN_DOWNLOAD):
         keyboard_raw.append({"text": "💾Save", "callback_data": const.BTN_DOWNLOAD})
-    # if utils.check_user_rule(chat_id, const.BTN_LORE):
-    #    keyboard_raw.append({
-    #        text: "📜Lore", "callback_data": const.BTN_LORE}
     if utils.check_user_rule(chat_id, const.BTN_CHAR_LIST):
         keyboard_raw.append({"text": "🎭Chars", "callback_data": const.BTN_CHAR_LIST + "-9999"})
     if utils.check_user_rule(chat_id, const.BTN_RESET):
@@ -60,21 +57,22 @@ def get_chat_keyboard(chat_id, user: Optional[User], no_previous=False):
         keyboard_raw.append({"text": "🥸Impersonate", "callback_data": const.BTN_IMPERSONATE})
     if utils.check_user_rule(chat_id, const.BTN_NEXT):
         keyboard_raw.append({"text": "▶Next", "callback_data": const.BTN_NEXT})
-    #    if utils.check_user_rule(chat_id, const.BTN_CONTINUE):
-    #        keyboard_raw.append({"text": "➡Continue", "callback_data": const.BTN_CONTINUE})
     if utils.check_user_rule(chat_id, const.BTN_DEL_WORD):
         keyboard_raw.append({"text": "⬅Del sentence", "callback_data": const.BTN_DEL_WORD})
+
+    # Previous variant button logic
+    previous_button_enabled = False
+    if not no_previous and user and user.messages:
+        last_msg = user.messages[-1]
+        if last_msg.msg_previous_out:
+            previous_button_enabled = True
+
     if utils.check_user_rule(chat_id, const.BTN_PREVIOUS):
-        if no_previous:
-            keyboard_raw.append({"text": "-", "callback_data": "none"})
-        elif user is None:
-            keyboard_raw.append({"text": "-", "callback_data": "none"})
-        elif len(user.msg_id) == 0:
-            keyboard_raw.append({"text": "-", "callback_data": "none"})
-        elif str(user.msg_id[-1]) in user.previous_history:
+        if previous_button_enabled:
             keyboard_raw.append({"text": "↪️Previous variant", "callback_data": const.BTN_PREVIOUS})
         else:
             keyboard_raw.append({"text": "-", "callback_data": "none"})
+
     if utils.check_user_rule(chat_id, const.BTN_REGEN):
         keyboard_raw.append({"text": "🔄Regenerate", "callback_data": const.BTN_REGEN})
     if utils.check_user_rule(chat_id, const.BTN_OPTION):
@@ -98,13 +96,19 @@ def get_chat_init_keyboard(chat_id=0, alter_greeting_exist=False):
     return [keyboard_raw]
 
 
+def get_sd_api_keyboard():
+    keyboard_raw = [{"text": "🔄Regenerate", "callback_data": const.BTN_REGEN},
+                    {"text": "❌Delete", "callback_data": const.BTN_CUTOFF}]
+    return [keyboard_raw]
+
+
 def get_switch_keyboard(
-    opt_list: list,
-    shift: int,
-    data_list: str,
-    data_load: str,
-    keyboard_rows=6,
-    keyboard_column=2,
+        opt_list: list,
+        shift: int,
+        data_list: str,
+        data_load: str,
+        keyboard_rows=6,
+        keyboard_column=2,
 ):
     # find shift
     opt_list_length = len(opt_list)
@@ -145,5 +149,4 @@ def get_switch_keyboard(
         {"text": "⏭", "callback_data": data_list + str(end_shift)},
     ]
     characters_buttons.append(switch_buttons)
-    # add new keyboard to message!
     return characters_buttons
