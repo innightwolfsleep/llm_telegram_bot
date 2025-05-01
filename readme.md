@@ -4,7 +4,7 @@
 - wrAPPer for llama.cpp(default), exllama or transformers. 
 
 - wrAPPer for [ollama](https://github.com/ollama/ollama) (config example - config/ollama_config.json)
-- 
+  
 - wrAPPer for llama.cpp server (config example - config/llamacpp_server.json)
 
 - an EXTension for [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui).s
