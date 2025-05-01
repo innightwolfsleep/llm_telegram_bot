@@ -94,7 +94,7 @@ def get_tokens_count(text: str):
     """
     count = generator.tokens_count(text)
     if count < 1:
-        count = len(findall(r'\b\w+\b|[^\w\s]', text))
+        count = len(findall(r'(\w+)|([^\w\s])|(\n)', text))
     return count
 
 
