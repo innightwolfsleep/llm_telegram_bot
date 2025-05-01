@@ -1,5 +1,6 @@
 import importlib
 import logging
+from re import findall
 from typing import List, Dict
 
 try:
@@ -91,7 +92,10 @@ def get_tokens_count(text: str):
     Returns:
       text token length (int)
     """
-    return generator.tokens_count(text)
+    count = generator.tokens_count(text)
+    if count < 1:
+        count = len(findall(r'(\w+)|([^\w\s])|(\n)', text))
+    return count
 
 
 def get_model_list():
