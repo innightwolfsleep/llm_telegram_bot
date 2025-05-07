@@ -1,6 +1,6 @@
 import importlib
 import logging
-from re import findall
+from re import findall, match
 from typing import List, Dict
 
 try:
@@ -93,8 +93,17 @@ def get_tokens_count(text: str):
       text token length (int)
     """
     count = generator.tokens_count(text)
-    if count < 1:
-        count = len(findall(r'(\w+)|([^\w\s])|(\n)', text))
+    # If generator tokens_count invalid - count approximate
+    if count <= 1:
+        word_token_splitter = 6
+        # Split the text into tokens (words, punctuation, special characters, numbers, newlines)
+        tokens = findall(r'\b\w+\b|[^\w\s]|[\d]+|\n', text)
+        # Handle long words
+        long_words = [word for word in tokens if len(word) > word_token_splitter and match(r'\w+', word)]
+        for word in long_words:
+            tokens.extend([word[i:i + word_token_splitter] for i in range(0, len(word), word_token_splitter)])
+        count = len(tokens)
+
     return count
 
 
