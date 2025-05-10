@@ -15,8 +15,9 @@ class Msg:
     text_in: str  # user input, raw format
     inbound: str  # user input as it stored in history
     outbound: str  # bot answer as it stored in history
-    msg_previous_out: List[str]  # previous model answers list, result of regenerate option
+    previous_out: List[str]  # previous model answers list, result of regenerate option
     msg_id: int  # bot answering message IDs, using for possible deleting/editing/regenerating
+    #msg_extended_ids: List[int]  # bot answering extended message IDs, using for possible deleting/editing/regenerating
 
     def __init__(self,
                  name_in="User",
@@ -30,7 +31,7 @@ class Msg:
         self.text_in = text_in
         self.inbound = inbound
         self.outbound = outbound
-        self.msg_previous_out = msg_previous_out if msg_previous_out is not None else []  # Ensure it's a list even when empty
+        self.previous_out = msg_previous_out if msg_previous_out is not None else []  # Ensure it's a list even when empty
         self.msg_id = msg_id
 
     def to_json(self) -> str:
@@ -40,7 +41,7 @@ class Msg:
             "text_in": self.text_in,
             "inbound": self.inbound,
             "outbound": self.outbound,
-            "msg_previous_out": self.msg_previous_out,
+            "previous_out": self.previous_out,
             "msg_id": self.msg_id
         })
 
@@ -51,7 +52,7 @@ class Msg:
             "text_in": self.text_in,
             "inbound": self.inbound,
             "outbound": self.outbound,
-            "msg_previous_out": self.msg_previous_out,
+            "previous_out": self.previous_out,
             "msg_id": self.msg_id
         }
 
@@ -69,7 +70,7 @@ class Msg:
             text_in=dct.get("text_in", ""),
             inbound=dct.get("inbound", ""),
             outbound=dct.get("outbound", ""),
-            msg_previous_out=dct.get("msg_previous_out", ""),
+            msg_previous_out=dct.get("previous_out", ""),
             msg_id=dct.get("msg_id", 0),
         )  # Use keyword arguments for initialization
 
@@ -219,11 +220,11 @@ class User:
             return None
 
         for msg in reversed(self.messages):
-            if msg.msg_id == msg_id and msg.msg_previous_out:
+            if msg.msg_id == msg_id and msg.previous_out:
                 last_out = msg.outbound  # Store current output
-                new_out = msg.msg_previous_out.pop()  # Get previous output
+                new_out = msg.previous_out.pop()  # Get previous output
                 msg.outbound = new_out  # Restore previous output
-                msg.msg_previous_out.insert(0, last_out)  # Store current for future revert
+                msg.previous_out.insert(0, last_out)  # Store current for future revert
                 return new_out
         return None
 

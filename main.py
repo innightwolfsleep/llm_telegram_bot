@@ -404,21 +404,14 @@ class AiogramLlmBot:
         await self.bot.answer_callback_query(cbq.id)
         try:
             utils.init_check_user(self.users, chat_id)
-            if option in [
-                const.BTN_IMPERSONATE,
-                const.BTN_NEXT,
-                const.BTN_CONTINUE,
-                const.BTN_DEL_WORD,
-                const.BTN_REGEN,
-                const.BTN_CUTOFF,
-            ]:
+            if option in [const.BTN_IMPERSONATE, const.BTN_NEXT, const.BTN_CONTINUE, const.BTN_DEL_WORD,
+                          const.BTN_REGEN, const.BTN_CUTOFF]:
                 if not self.users[chat_id].messages:
                     await cbq.message.edit_reply_markup(reply_markup=None)
                     return
-                else:
-                    if msg_id != (self.users[chat_id].last.msg_id if self.users[chat_id].messages else 0):
-                        await cbq.message.edit_reply_markup(reply_markup=None)
-                        return
+                elif msg_id != (self.users[chat_id].last.msg_id if self.users[chat_id].messages else 0):
+                    await cbq.message.edit_reply_markup(reply_markup=None)
+                    return
             await self.handle_button_option(option, chat_id, cbq)
             self.users[chat_id].save_user_history(chat_id, cfg.history_dir_path)
         except Exception as e:
@@ -455,6 +448,10 @@ class AiogramLlmBot:
             await self.show_options_button(cbq)
         elif option == const.BTN_DELETE and utils.check_user_rule(chat_id, option):
             await self.on_delete_pressed_button(cbq)
+        elif option == const.BTN_GET_LONG_TEXT_FILE:
+            await self.on_get_long_text_as_file_button(cbq)
+        elif option == const.BTN_GET_LONG_TEXT_MSG:
+            await self.on_get_long_text_as_message_button(cbq)
         elif option.startswith(const.BTN_CHAR_LIST) and utils.check_user_rule(chat_id, option):
             await self.keyboard_characters_button(cbq, option=option)
         elif option.startswith(const.BTN_CHAR_LOAD) and utils.check_user_rule(chat_id, option):
@@ -623,13 +620,33 @@ class AiogramLlmBot:
         chat_id = cbq.message.chat.id
         if chat_id not in self.users:
             return
-
         user_file = io.StringIO(self.users[chat_id].to_json())
         send_caption = await self.make_template_message("hist_to_chat", chat_id)
         await self.bot.send_document(
             chat_id=chat_id,
             caption=send_caption,
             document=InputFile(user_file, filename=self.users[chat_id].name2 + ".json"),
+        )
+
+    async def on_get_long_text_as_message_button(self, cbq):
+        chat_id = cbq.message.chat.id
+        user = self.users[chat_id]
+        message_length = 2000 if user.language != cfg.llm_lang else 4000
+        lines = [user.last.outbound[i:i + message_length] for i in range(0, len(user.last.outbound), message_length)]
+        for line in lines[1:]:
+            prepared_line = await utils.prepare_text(line, user, "to_user")
+            await self.bot.send_message(chat_id=chat_id, text=prepared_line, parse_mode="HTML",
+                                        reply_markup=self.keyboard_raw_to_keyboard_tg(buttons.get_delete_keyboard()))
+
+    async def on_get_long_text_as_file_button(self, cbq):
+        chat_id = cbq.message.chat.id
+        user = self.users[chat_id]
+        if chat_id not in self.users:
+            return
+        user_file = io.StringIO(self.users[chat_id].last.outbound)
+        await self.bot.send_document(
+            chat_id=chat_id,
+            document=InputFile(user_file, filename=user.name2 + "_" + str(user.last.msg_id) + ".txt"),
         )
 
     async def on_reset_history_button(self, cbq):
