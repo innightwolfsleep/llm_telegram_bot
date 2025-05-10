@@ -120,9 +120,9 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
         # Preprocessing: add user_in/names/whitespaces to history in right order depends on mode
         # If regenerate - msg_id the same, text and name the same. But history clearing
         if text_in == const.GENERATOR_MODE_REGENERATE and user.messages:
-            if not user.last.msg_previous_out:
-                user.last.msg_previous_out = []
-            user.last.msg_previous_out.append(user.last.outbound)
+            if not user.last.previous_out:
+                user.last.previous_out = []
+            user.last.previous_out.append(user.last.outbound)
             text_in = user.last.text_in
             name_in = user.last.name_in
             user.last.inbound = ""
@@ -269,8 +269,8 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             user.last.outbound = user.last.outbound + " " + answer
         generator_lock.release()
 
-        if user.messages and user.last.msg_previous_out:
-            if user.last.msg_previous_out[-1] == user.last.outbound:
+        if user.messages and user.last.previous_out:
+            if user.last.previous_out[-1] == user.last.outbound:
                 return_msg_action = const.MSG_NOTHING_TO_DO
 
         if return_msg_action == const.MSG_SD_API and user.messages:

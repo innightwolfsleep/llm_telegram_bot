@@ -52,34 +52,45 @@ def get_options_keyboard(chat_id, user: User):
 
 
 def get_chat_keyboard(chat_id, user: Optional[User], no_previous=False):
-    keyboard_raw = []
+    keyboard = []
+    keyboard_row = []
     if utils.check_user_rule(chat_id, const.BTN_IMPERSONATE):
-        keyboard_raw.append({"text": "🥸Impersonate", "callback_data": const.BTN_IMPERSONATE})
+        keyboard_row.append({"text": "🥸Impersonate", "callback_data": const.BTN_IMPERSONATE})
     if utils.check_user_rule(chat_id, const.BTN_NEXT):
-        keyboard_raw.append({"text": "▶Next", "callback_data": const.BTN_NEXT})
+        keyboard_row.append({"text": "▶Next", "callback_data": const.BTN_NEXT})
     if utils.check_user_rule(chat_id, const.BTN_DEL_WORD):
-        keyboard_raw.append({"text": "⬅Del sentence", "callback_data": const.BTN_DEL_WORD})
+        keyboard_row.append({"text": "⬅Del sentence", "callback_data": const.BTN_DEL_WORD})
 
     # Previous variant button logic
     previous_button_enabled = False
     if not no_previous and user and user.messages:
         last_msg = user.messages[-1]
-        if last_msg.msg_previous_out:
+        if last_msg.previous_out:
             previous_button_enabled = True
 
     if utils.check_user_rule(chat_id, const.BTN_PREVIOUS):
         if previous_button_enabled:
-            keyboard_raw.append({"text": "↪️Previous variant", "callback_data": const.BTN_PREVIOUS})
+            keyboard_row.append({"text": "↪️Previous variant", "callback_data": const.BTN_PREVIOUS})
         else:
-            keyboard_raw.append({"text": "-", "callback_data": "none"})
+            keyboard_row.append({"text": "-", "callback_data": "none"})
 
     if utils.check_user_rule(chat_id, const.BTN_REGEN):
-        keyboard_raw.append({"text": "🔄Regenerate", "callback_data": const.BTN_REGEN})
+        keyboard_row.append({"text": "🔄Regenerate", "callback_data": const.BTN_REGEN})
     if utils.check_user_rule(chat_id, const.BTN_OPTION):
-        keyboard_raw.append({"text": "⚙Options", "callback_data": const.BTN_OPTION})
+        keyboard_row.append({"text": "⚙Options", "callback_data": const.BTN_OPTION})
     if utils.check_user_rule(chat_id, const.BTN_CUTOFF):
-        keyboard_raw.append({"text": "❌Delete", "callback_data": const.BTN_CUTOFF})
-    return [keyboard_raw]
+        keyboard_row.append({"text": "❌Delete", "callback_data": const.BTN_CUTOFF})
+    keyboard.append(keyboard_row)
+    if len(user.last.outbound) > 4000 or (user.language != cfg.llm_lang and len(user.last.outbound) > 2000):
+        keyboard_row2 = [{"text": "💾🔻download full", "callback_data": const.BTN_GET_LONG_TEXT_FILE},
+                         {"text": "✉️🔻send full", "callback_data": const.BTN_GET_LONG_TEXT_MSG}]
+        keyboard.append(keyboard_row2)
+    return keyboard
+
+
+def get_delete_keyboard():
+    keyboard = [[{"text": "❌Delete", "callback_data": const.BTN_DELETE}]]
+    return keyboard
 
 
 def get_chat_init_keyboard(chat_id=0, alter_greeting_exist=False):
