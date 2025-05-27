@@ -267,6 +267,7 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
                 if answer.endswith(end):
                     answer = answer[: -len(end)]
             user.last.outbound = user.last.outbound + " " + answer
+            user.last.name_in = name_in
         generator_lock.release()
 
         if user.messages and user.last.previous_out:
