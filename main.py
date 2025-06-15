@@ -631,7 +631,7 @@ class AiogramLlmBot:
     async def on_get_long_text_as_message_button(self, cbq):
         chat_id = cbq.message.chat.id
         user = self.users[chat_id]
-        message_length = 2000 if user.language != cfg.llm_lang else 4000
+        message_length = 1995 if user.language != cfg.llm_lang else 3995
         lines = [user.last.outbound[i:i + message_length] for i in range(0, len(user.last.outbound), message_length)]
         for line in lines[1:]:
             prepared_line = await utils.prepare_text(line, user, "to_user")
