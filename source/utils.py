@@ -74,7 +74,9 @@ async def prepare_text(original_text: str, user: User, direction="to_user"):
     if cfg.llm_lang != user.language:
         try:
             if direction == "to_model":
-                text = await translate_text(text=text, source=user.language, target=cfg.llm_lang)
+                # if user try to write in model language - "auto" better
+                text = await translate_text(text=text, source="auto", target=cfg.llm_lang)
+                # text = await translate_text(text=text, source=user.language, target=cfg.llm_lang)
             elif direction == "to_user":
                 text = await translate_text(text=text, source=cfg.llm_lang, target=user.language)
         except Exception as exception:
