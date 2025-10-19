@@ -20,8 +20,8 @@ def run_server(token: str, config_file_path: str = DEFAULT_CONFIG_FILE_PATH):
         # Load environment variables from .env file
         load_dotenv()
         token = os.environ.get("BOT_TOKEN", "")
-        if not token:
-            raise ValueError("Bot token not provided and not found in environment variables.")
+#        if not token:
+#            raise ValueError("Bot token not provided and not found in environment variables.")
 
     # Create an instance of TelegramBotWrapper
     tg_server = AiogramLlmBot(config_file_path=config_file_path)

@@ -1,5 +1,4 @@
 import json
-import io
 import logging
 import asyncio
 import os
@@ -14,10 +13,12 @@ import backoff
 import urllib3
 from aiogram import Bot, types
 from aiogram.types import Message, CallbackQuery
-from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.dispatcher.dispatcher import Dispatcher
-from aiogram.types.input_file import InputFile
-from aiogram.types.input_media import InputMediaAudio
+from aiogram.types.input_file import InputFile, BufferedInputFile
+from aiogram.types.input_media_audio import InputMediaAudio
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.filters.command import Command
 
 logging.basicConfig(level=logging.INFO)
 
@@ -94,14 +95,17 @@ class AiogramLlmBot:
             token_file_name = token_file_name or cfg.token_file_path
             with open(normpath(token_file_name), "r", encoding="utf-8") as f:
                 bot_token = f.read().strip()
-        proxy_url = cfg.proxy_url if cfg.proxy_url else None
-        self.bot = Bot(token=bot_token, proxy=proxy_url)
-        self.dp = Dispatcher(self.bot)
-        self.dp.register_message_handler(self.thread_welcome_message, commands=["start"])
-        self.dp.register_message_handler(self.thread_get_message)
-        self.dp.register_message_handler(self.thread_get_document, content_types=types.ContentType.DOCUMENT)
-        self.dp.register_callback_query_handler(self.thread_push_button)
-        await self.dp.start_polling()
+        if cfg.proxy_url:
+            session = AiohttpSession(proxy="protocol://host:port/")
+        else:
+            session = None
+        self.bot = Bot(token=bot_token, session=session)
+        self.dp = Dispatcher()
+        self.dp.message.register(self.thread_welcome_message, Command("start"))
+        self.dp.message.register(self.thread_get_message)
+        self.dp.message.register(self.thread_get_document)
+        self.dp.callback_query.register(self.thread_push_button)
+        await self.dp.start_polling(self.bot)
 
     # =============================================================================
     # Additional telegram actions
@@ -109,7 +113,8 @@ class AiogramLlmBot:
     @staticmethod
     def get_user_profile_name(message) -> str:
         message = message or message.message
-        user_name = cfg.user_name_template.replace("FIRSTNAME", message.from_user.first_name or "")
+        user_name = cfg.user_name_template
+        user_name = user_name.replace("FIRSTNAME", message.from_user.first_name or "")
         user_name = user_name.replace("LASTNAME", message.from_user.last_name or "")
         user_name = user_name.replace("USERNAME", message.from_user.username or "")
         user_name = user_name.replace("ID", str(message.from_user.id) or "")
@@ -138,19 +143,17 @@ class AiogramLlmBot:
     # =============================================================================
     # Work with history! Init/load/save functions
 
-    async def thread_get_json_document(self, message: Message):
+    async def get_json_save_file(self, message: Message, text_content: str, file_name: str):
         chat_id = message.chat.id
         if not utils.check_user_permission(chat_id):
             return False
         utils.init_check_user(self.users, chat_id)
         user = self.users[chat_id]
-        default_user_file_path = str(Path(f"{cfg.history_dir_path}/{str(chat_id)}.json"))
 
-        file = await self.bot.get_file(file_id=message.document.file_id)
-        file_path = file.file_path
-        await self.bot.download_file(file_path=file_path, destination=default_user_file_path)
+        user.from_json(text_content)
+        if user.char_file == "":
+            user.char_file = file_name
 
-        user.load_user_history(default_user_file_path)
         last_message = user.last.outbound if user.messages else "<no message in history>"
         send_text = await self.make_template_message("hist_loaded", chat_id, last_message)
         await self.bot.send_message(
@@ -297,29 +300,38 @@ class AiogramLlmBot:
     # =============================================================================
     # Message handler
     async def thread_get_document(self, message: Message):
-        file_name = message.document.file_name
+        if message.document is None:
+            return
+        if message.document.file_size > 16000000:
+            return
+        print("thread_get_document2")
         file_id = message.document.file_id
+        file_name = message.document.file_name
+        file_content = await self.bot.download(file_id)
+        file_bytes = file_content.read()
+        text_content = file_bytes.decode('utf-8')
+
         chat_id = message.chat.id
         utils.init_check_user(self.users, chat_id)
         user = self.users[chat_id]
-        if file_name.endswith(".json"):
-            await self.thread_get_json_document(message)
+        if user.validate_user_json(text_content):
+            await self.get_json_save_file(message, text_content, file_name)
         else:
-            document_text = ""
-            document_path = f"{cfg.file_download_dir}/{file_name}"
-            await self.bot.download_file_by_id(file_id, destination=document_path)
-            with open(document_path, "r", encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-            os.remove(document_path)
-            document_text += f"{file_name}:\n{content}\n\n"
-            await tp.aget_answer(
-                text_in="\n".join([cfg.permanent_add_context_prefixes[0], document_text]),
-                user=user,
-                bot_mode=cfg.bot_mode,
-                generation_params=cfg.generation_params,
-                name_in=self.get_user_profile_name(message),
-            )
-            await message.reply(text="File '" + file_name + "' added to context.")
+            await self.add_document_to_context(message, text_content, file_name)
+
+    async def add_document_to_context(self, message: Message, text_content: str, file_name: str):
+        chat_id = message.chat.id
+        utils.init_check_user(self.users, chat_id)
+        user = self.users[chat_id]
+        document_text = f"{file_name}:\n{text_content}\n\n"
+        await tp.aget_answer(
+            text_in="\n".join([cfg.permanent_add_context_prefixes[0], document_text]),
+            user=user,
+            bot_mode=cfg.bot_mode,
+            generation_params=cfg.generation_params,
+            name_in=self.get_user_profile_name(message),
+        )
+        await message.reply(text="File '" + file_name + "' added to context.")
 
     async def thread_welcome_message(self, message: types.Message):
         chat_id = message.chat.id
@@ -336,11 +348,14 @@ class AiogramLlmBot:
         )
 
     async def thread_get_message(self, message: types.Message):
+        if message.document is not None:
+            await self.thread_get_document(message)
+            return True
+
         user_text = message.text
         chat_id = message.chat.id
         utils.init_check_user(self.users, chat_id)
         user = self.users[chat_id]
-
         if not utils.check_user_permission(chat_id):
             return False
         if not user.check_flooding(cfg.flood_avoid_delay):
@@ -620,12 +635,11 @@ class AiogramLlmBot:
         chat_id = cbq.message.chat.id
         if chat_id not in self.users:
             return
-        user_file = io.StringIO(self.users[chat_id].to_json())
-        send_caption = await self.make_template_message("hist_to_chat", chat_id)
+
+        json_file = self.users[chat_id].to_json()
         await self.bot.send_document(
             chat_id=chat_id,
-            caption=send_caption,
-            document=InputFile(user_file, filename=self.users[chat_id].name2 + ".json"),
+            document=BufferedInputFile(file=bytes(json_file, "utf-8"), filename=self.users[chat_id].name2 + ".json"),
         )
 
     async def on_get_long_text_as_message_button(self, cbq):
@@ -640,13 +654,12 @@ class AiogramLlmBot:
 
     async def on_get_long_text_as_file_button(self, cbq):
         chat_id = cbq.message.chat.id
-        user = self.users[chat_id]
         if chat_id not in self.users:
             return
-        user_file = io.StringIO(self.users[chat_id].last.outbound)
+        user_file = self.users[chat_id].last.outbound
         await self.bot.send_document(
             chat_id=chat_id,
-            document=InputFile(user_file, filename=user.name2 + "_" + str(user.last.msg_id) + ".txt"),
+            document=BufferedInputFile(file=bytes(user_file, "utf-8"), filename=self.users[chat_id].name2 + ".txt"),
         )
 
     async def on_reset_history_button(self, cbq):
