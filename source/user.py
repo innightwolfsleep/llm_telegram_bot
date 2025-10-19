@@ -275,6 +275,24 @@ class User:
             }
         )
 
+    def validate_user_json(self, json_string):
+        """Валидация JSON строки на соответствие структуре пользовательских данных."""
+        try:
+            data = json.loads(json_string)
+        except json.JSONDecodeError:
+            return False
+
+        if not isinstance(data, dict):
+            return False
+
+        required_fields = ["char_file", "user_id", "name1", "name2", "context", "messages", "greeting"]
+
+        # Проверяем наличие всех обязательных полей
+        if not all(field in data for field in required_fields):
+            return False
+
+        return True
+
     def from_json(self, json_data: str):
         """Convert json string data to internal variables of User class
 
@@ -412,6 +430,7 @@ class User:
         if exists(user_char_history_path):
             return self.load_user_history(user_char_history_path)
         elif exists(user_char_history_old_path):
+
             return self.load_user_history(user_char_history_old_path)
         return False
 
