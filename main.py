@@ -12,7 +12,7 @@ from typing import Dict, Union
 import backoff
 import urllib3
 from aiogram import Bot, types
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.dispatcher.dispatcher import Dispatcher
 from aiogram.types.input_file import InputFile, BufferedInputFile
@@ -193,7 +193,8 @@ class AiogramLlmBot:
             if len(file_list) > 0:
                 for image_path in file_list:
                     if exists(image_path):
-                        await self.bot.send_photo(caption=answer, chat_id=chat_id, photo=InputFile(image_path))
+                        photo = FSInputFile(path=image_path)
+                        await self.bot.send_photo(caption=answer, chat_id=chat_id, photo=photo)
                         remove(image_path)
         except Exception as e:
             logging.error("send_sd_image: " + str(e))
@@ -982,3 +983,4 @@ class AiogramLlmBot:
             for button_dict in buttons_row:
                 keyboard_tg[-1].append(InlineKeyboardButton(**button_dict))
         return InlineKeyboardMarkup(inline_keyboard=keyboard_tg)
+
