@@ -1,5 +1,5 @@
 import logging
-from re import split, sub, DOTALL
+from re import split, sub
 from threading import Lock
 from time import sleep
 from typing import Tuple, Dict
@@ -241,12 +241,12 @@ def get_answer(text_in: str, user: User, bot_mode: str, generation_params: Dict,
             turn_template=user.turn_template,
         )
 
-        if cfg.generation_params["delete_reasoning"]:
-            for reasoning_blocks in cfg.generation_params["delete_reasoning_blocks"]:
-                answer = remove_think_tags(answer, reasoning_blocks)
-
         if debug_flag:
             print(f"ANSWER:\n{answer}")
+
+        if cfg.generation_params["delete_reasoning"]:
+            for reasoning_end in cfg.generation_params["reasoning_ends"]:
+                answer = remove_think_tags(answer, reasoning_end)
 
         # Truncate prompt prefix/postfix
         if len(cfg.bot_prompt_end) > 0 and answer.endswith(cfg.bot_prompt_end):
@@ -306,8 +306,8 @@ def delete_last_text_block(text_in):
         return new_last_message
 
 
-def remove_think_tags(text, tags):
+def remove_think_tags(text, reasoning_end):
     """
     Removes text blocks enclosed by specified tags using regular expressions.
     """
-    return sub(tags[0] + r'.*?' + tags[1], '', text, flags=DOTALL)
+    return split(reasoning_end, text)[-1]

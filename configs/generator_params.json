@@ -1,7 +1,7 @@
 {
     "stopping_strings": ["<END>"],
     "delete_reasoning": false,
-    "delete_reasoning_blocks": [["<think>", "</think>"]],
+    "reasoning_ends": ["</think>", "</seed:think>"],
     "eos_token": "None",
     "max_new_tokens": 4000,
     "seed": -1.0,
