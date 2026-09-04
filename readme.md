@@ -4,6 +4,8 @@
 - wrAPPer for llama.cpp(default), exllama or transformers. 
 
 - wrAPPer for [ollama](https://github.com/ollama/ollama) (config example - config/ollama_config.json)
+
+- wrAPPer for [llmman](https://github.com/llmmanorg/llmman) - serves the Ollama API on port 17434 (config example - config/llmman_config.json)
   
 - wrAPPer for llama.cpp server (config example - config/llamacpp_server.json)
 
@@ -124,6 +126,8 @@ x_config.json
             - generator_llamacpp_server_completions - using llama.cpp server
             - generator_ollama_chat - using ollama_chat server
             - generator_ollama_completions - using ollama_competition server
+            - generator_llmman_chat - using llmman server (Ollama API on port 17434, override with LLMMAN_HOST)
+            - generator_llmman_completions - using llmman server (Ollama API on port 17434, override with LLMMAN_HOST)
             - generator_langchain_llama_cpp - based in langchain+llama
             - generator_transformers - based on transformers, untested
             - generator_text_generator_webui_openapi - use oobabooga/text-generation-webui OpenAPI extension
