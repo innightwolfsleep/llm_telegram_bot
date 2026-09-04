@@ -11,6 +11,7 @@ except ImportError:
 class Generator(AbstractGenerator):
     model_change_allowed = True  # Whether model changing is allowed without stopping.
     preset_change_allowed = True  # Whether preset file changing is allowed.
+    base_url = "http://127.0.0.1:11434"  # Default Ollama API endpoint
 
     def __init__(
         self,
@@ -22,7 +23,7 @@ class Generator(AbstractGenerator):
         self.model = model_path
         self.n_ctx = n_ctx
         self.headers = {"Content-Type": "application/json"}
-        self.URI = "http://127.0.0.1:11434/api/generate"  # Fallback to default Ollama API endpoint
+        self.URI = self.base_url + "/api/generate"
         self.last_token_count = 0  # Внутренняя переменная для хранения количества токенов
 
     def generate_answer(
@@ -81,7 +82,7 @@ class Generator(AbstractGenerator):
 
     def get_model_list(self):
         # Fetch the list of available models from Ollama
-        response = requests.get("http://127.0.0.1:11434/api/tags")
+        response = requests.get(self.base_url + "/api/tags")
         if response.status_code == 200:
             models = response.json().get("models", [])
             return [model["name"] for model in models]
