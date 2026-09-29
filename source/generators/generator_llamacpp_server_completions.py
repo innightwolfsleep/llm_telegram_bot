@@ -53,7 +53,7 @@ class Generator(AbstractGenerator):
             response = requests.post(urljoin(self.URI, "/completion"),
                                      json=request,
                                      headers=self.headers,
-                                     timeout=60)
+                                     timeout=360)
             response.raise_for_status()
             result = response.json()["content"]
             return result
