@@ -68,7 +68,7 @@ class Generator(AbstractGenerator):
             },
         }
         # Send the request to Ollama API
-        response = requests.post(self.URI, json=request, headers=self.headers)
+        response = requests.post(self.URI, json=request, headers=self.headers, timeout=360)
         if response.status_code == 200:
             # Ollama returns a stream of responses, so we need to collect all parts
             decoded_line = json.loads(response.content.decode("utf-8"))
